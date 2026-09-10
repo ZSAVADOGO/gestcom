@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ point.nom }}
+{% endblock %}
+
+{% block content %}
+
+<div class="max-w-5xl mx-auto">
+
+    <a href="{% url 'points_vente:liste' %}"
+       class="text-indigo-600 text-sm">
+
+        ← Retour
+
+    </a>
+
+    <div class="bg-white rounded-xl
+                border shadow-sm
+                mt-4 overflow-hidden">
+
+        <div class="p-6">
+
+            <div class="flex justify-between
+                        items-start">
+
+                <div>
+
+                    <h1 class="text-2xl font-bold">
+                        {{ point.nom }}
+                    </h1>
+
+                    <p class="text-gray-500 mt-1">
+                        {{ point.get_type_display }}
+                    </p>
+
+                </div>
+
+                {% if point.est_actif %}
+
+                    <span class="bg-green-100
+                                 text-green-700
+                                 px-3 py-1
+                                 rounded-full text-sm">
+
+                        Ouvert
+
+                    </span>
+
+                {% endif %}
+
+            </div>
+
+            <div class="grid md:grid-cols-2
+                        gap-6 mt-8">
+
+                <div>
+
+                    <h2 class="font-semibold mb-3">
+                        Informations
+                    </h2>
+
+                    <div class="space-y-2 text-sm">
+
+                        <p>
+                            📍 {{ point.adresse }}
+                        </p>
+
+                        <p>
+                            {{ point.quartier }}
+                            — {{ point.ville }}
+                        </p>
+
+                        {% if point.telephone %}
+                            <p>
+                                📞 {{ point.telephone }}
+                            </p>
+                        {% endif %}
+
+                        {% if point.email %}
+                            <p>
+                                ✉ {{ point.email }}
+                            </p>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <div>
+
+                    <h2 class="font-semibold mb-3">
+                        Horaires
+                    </h2>
+
+                    {% for jour, horaire in point.horaires.items %}
+
+                        <div class="flex justify-between
+                                    text-sm py-1">
+
+                            <span>{{ jour|title }}</span>
+
+                            <span>{{ horaire }}</span>
+
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+        {% if point.latitude and point.longitude %}
+
+        <div class="bg-gray-100 h-64
+                    flex items-center
+                    justify-center">
+
+            <p class="text-gray-500">
+                Carte — {{ point.latitude }},
+                {{ point.longitude }}
+            </p>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

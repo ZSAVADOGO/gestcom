@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block title %}{{ titre }}{% endblock %}
+
+{% block content %}
+{% load hippisme_tags %}
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <div class="flex flex-col md:flex-row md:items-center
+                md:justify-between gap-4 mb-6">
+
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">
+                {{ titre }}
+            </h1>
+
+            <p class="text-sm text-gray-500 mt-1">
+                {{ sous_titre }}
+            </p>
+        </div>
+
+        <a href="{% url url_creation %}"
+           class="inline-flex items-center justify-center
+                  px-4 py-2.5 rounded-lg
+                  bg-indigo-600 text-white
+                  hover:bg-indigo-700 transition">
+
+            <i class="fas fa-plus mr-2"></i>
+            Ajouter
+        </a>
+    </div>
+
+
+    <!-- Recherche -->
+
+    <div class="bg-white rounded-xl shadow-sm
+                border border-gray-200 p-4 mb-6">
+
+        <form method="get"
+              class="flex flex-col md:flex-row gap-3">
+
+            <input
+                type="text"
+                name="q"
+                value="{{ request.GET.q }}"
+                placeholder="Rechercher..."
+                class="flex-1 rounded-lg border border-gray-300
+                       px-4 py-2.5 focus:ring-2
+                       focus:ring-indigo-200
+                       focus:border-indigo-500 outline-none">
+
+            <button
+                type="submit"
+                class="px-5 py-2.5 rounded-lg
+                       bg-gray-900 text-white
+                       hover:bg-gray-800">
+
+                <i class="fas fa-search mr-2"></i>
+                Rechercher
+            </button>
+
+            {% if request.GET.q %}
+                <a href="?"
+                   class="px-5 py-2.5 rounded-lg
+                          border border-gray-300
+                          text-gray-700
+                          hover:bg-gray-50">
+                    Réinitialiser
+                </a>
+            {% endif %}
+
+        </form>
+
+    </div>
+
+
+    <!-- Tableau -->
+
+    <div class="bg-white rounded-xl shadow-sm
+                border border-gray-200 overflow-hidden">
+
+        <div class="overflow-x-auto">
+
+            <table class="min-w-full divide-y divide-gray-200">
+
+                <thead class="bg-gray-50">
+
+                    <tr>
+
+                        {% for cle, label in colonnes %}
+                            <th class="px-6 py-3 text-left
+                                       text-xs font-semibold
+                                       text-gray-500 uppercase">
+                                {{ label }}
+                            </th>
+                        {% endfor %}
+
+                        <th class="px-6 py-3 text-right
+                                   text-xs font-semibold
+                                   text-gray-500 uppercase">
+                            Actions
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody class="divide-y divide-gray-100">
+
+                    {% for objet in objets %}
+
+                    <tr class="hover:bg-gray-50">
+
+                        {% for cle, label in colonnes %}
+
+                            <td class="px-6 py-4
+                                       whitespace-nowrap
+                                       text-sm text-gray-700">
+
+                                {% if cle == "est_actif" %}
+
+                                    {% if objet.est_actif %}
+                                        <span class="px-2.5 py-1
+                                                     rounded-full
+                                                     text-xs font-medium
+                                                     bg-green-100
+                                                     text-green-700">
+                                            Actif
+                                        </span>
+                                    {% else %}
+                                        <span class="px-2.5 py-1
+                                                     rounded-full
+                                                     text-xs font-medium
+                                                     bg-gray-100
+                                                     text-gray-600">
+                                            Inactif
+                                        </span>
+                                    {% endif %}
+
+                                {% elif cle == "est_non_partant" %}
+
+                                    {% if objet.est_non_partant %}
+                                        <span class="text-red-600
+                                                     font-semibold">
+                                            NP
+                                        </span>
+                                    {% else %}
+                                        <span class="text-green-600">
+                                            Partant
+                                        </span>
+                                    {% endif %}
+
+                                {% elif cle == "distance_metres" %}
+
+                                    {{ objet.distance_metres }} m
+
+                                {% else %}
+
+                                    {{ objet|getattribute:cle }}
+
+                                {% endif %}
+
+                            </td>
+
+                        {% endfor %}
+
+
+                        <td class="px-6 py-4 whitespace-nowrap
+                                   text-right">
+
+                            {% if type_objet == "hippodrome" %}
+                                <a href="{% url 'hippisme:hippodrome-detail' objet.pk %}"
+                                   class="text-indigo-600 hover:text-indigo-900">
+                                    Voir
+                                </a>
+
+                            {% elif type_objet == "entraineur" %}
+                                <a href="{% url 'hippisme:entraineur-detail' objet.pk %}"
+                                   class="text-indigo-600 hover:text-indigo-900">
+                                    Voir
+                                </a>
+
+                            {% elif type_objet == "jockey" %}
+                                <a href="{% url 'hippisme:jockey-detail' objet.pk %}"
+                                   class="text-indigo-600 hover:text-indigo-900">
+                                    Voir
+                                </a>
+
+                            {% elif type_objet == "cheval" %}
+                                <a href="{% url 'hippisme:cheval-detail' objet.pk %}"
+                                   class="text-indigo-600 hover:text-indigo-900">
+                                    Voir
+                                </a>
+
+                            {% elif type_objet == "reunion" %}
+                                <a href="{% url 'hippisme:reunion-detail' objet.pk %}"
+                                   class="text-indigo-600 hover:text-indigo-900">
+                                    Voir
+                                </a>
+
+                            {% elif type_objet == "course" %}
+                                <a href="{% url 'hippisme:course-detail' objet.pk %}"
+                                   class="text-indigo-600 hover:text-indigo-900">
+                                    Voir
+                                </a>
+
+                            {% elif type_objet == "partant" %}
+                                <a href="{% url 'hippisme:partant-detail' objet.pk %}"
+                                   class="text-indigo-600 hover:text-indigo-900">
+                                    Voir
+                                </a>
+                            {% endif %}
+
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+                        <td colspan="20"
+                            class="px-6 py-12 text-center
+                                   text-gray-500">
+
+                            <i class="fas fa-inbox text-3xl mb-3"></i>
+
+                            <p>
+                                Aucun élément trouvé.
+                            </p>
+
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+        <!-- Pagination -->
+
+        {% if is_paginated %}
+
+        <div class="px-6 py-4 border-t
+                    border-gray-200 flex justify-between">
+
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}"
+                   class="px-4 py-2 border rounded-lg">
+                    Précédent
+                </a>
+            {% endif %}
+
+            <span class="text-sm text-gray-500">
+                Page {{ page_obj.number }}
+                sur {{ page_obj.paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}"
+                   class="px-4 py-2 border rounded-lg">
+                    Suivant
+                </a>
+            {% endif %}
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

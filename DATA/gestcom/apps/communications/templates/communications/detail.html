@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ communique.titre }}
+{% endblock %}
+
+{% block content %}
+
+<div class="max-w-4xl mx-auto">
+
+    <a href="{% url 'communications:liste' %}"
+       class="text-indigo-600 text-sm">
+
+        ← Retour aux communiqués
+
+    </a>
+
+    <article class="bg-white rounded-xl
+                    shadow-sm
+                    border border-gray-200
+                    mt-4 overflow-hidden">
+
+        {% if communique.image %}
+
+            <img src="{{ communique.image.url }}"
+                 alt="{{ communique.titre }}"
+                 class="w-full max-h-96 object-cover">
+
+        {% endif %}
+
+        <div class="p-6 md:p-10">
+
+            <div class="flex gap-3 mb-4">
+
+                <span class="px-3 py-1
+                             bg-indigo-100
+                             text-indigo-700
+                             rounded-full text-sm">
+
+                    {{ communique.get_type_display }}
+
+                </span>
+
+                {% if communique.est_a_la_une %}
+
+                    <span class="px-3 py-1
+                                 bg-orange-100
+                                 text-orange-700
+                                 rounded-full text-sm">
+
+                        À la une
+
+                    </span>
+
+                {% endif %}
+
+            </div>
+
+            <h1 class="text-3xl font-bold">
+
+                {{ communique.titre }}
+
+            </h1>
+
+            <p class="text-sm text-gray-400 mt-3">
+
+                {{ communique.date_publication|date:"d/m/Y à H:i" }}
+
+            </p>
+
+            <div class="mt-8
+                        prose prose-lg max-w-none">
+
+                {{ communique.contenu|linebreaks }}
+
+            </div>
+
+        </div>
+
+    </article>
+
+</div>
+
+{% endblock %}

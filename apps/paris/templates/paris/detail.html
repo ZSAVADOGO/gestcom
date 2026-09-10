@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}
+Ticket {{ pari.numero_ticket }}
+{% endblock %}
+
+{% block content %}
+
+<div class="max-w-2xl mx-auto">
+
+    <div class="bg-white
+                rounded-2xl
+                border
+                shadow-sm
+                overflow-hidden">
+
+        <!-- HEADER -->
+
+        <div class="bg-indigo-700
+                    text-white
+                    p-6">
+
+            <div class="flex justify-between">
+
+                <div>
+
+                    <p class="text-indigo-200 text-sm">
+                        Ticket
+                    </p>
+
+                    <h1 class="text-xl font-bold">
+
+                        {{ pari.numero_ticket }}
+
+                    </h1>
+
+                </div>
+
+                {% if pari.est_gagnant %}
+
+                    <span class="bg-white
+                                 text-green-700
+                                 px-3 py-1
+                                 rounded-full
+                                 font-semibold">
+
+                        GAGNANT
+
+                    </span>
+
+                {% elif pari.est_perdant %}
+
+                    <span class="bg-white
+                                 text-red-700
+                                 px-3 py-1
+                                 rounded-full
+                                 font-semibold">
+
+                        PERDANT
+
+                    </span>
+
+                {% else %}
+
+                    <span class="bg-white
+                                 text-gray-700
+                                 px-3 py-1
+                                 rounded-full
+                                 font-semibold">
+
+                        {{ pari.get_statut_display }}
+
+                    </span>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+
+        <!-- INFORMATIONS -->
+
+        <div class="p-6 space-y-5">
+
+            <div class="grid grid-cols-2 gap-4">
+
+                <div>
+
+                    <p class="text-xs text-gray-400">
+                        Type
+                    </p>
+
+                    <p class="font-semibold">
+                        {{ pari.get_type_display }}
+                    </p>
+
+                </div>
+
+                <div>
+
+                    <p class="text-xs text-gray-400">
+                        Mise
+                    </p>
+
+                    <p class="font-semibold">
+                        {{ pari.montant_mise }} FCFA
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div>
+
+                <p class="text-xs text-gray-400 mb-2">
+                    Course
+                </p>
+
+                <p class="font-semibold">
+
+                    {{ pari.course.nom }}
+
+                </p>
+
+                <p class="text-sm text-gray-500">
+
+                    Course {{ pari.course.numero }}
+
+                </p>
+
+            </div>
+
+
+            <!-- SÉLECTIONS -->
+
+            <div>
+
+                <p class="text-xs text-gray-400 mb-3">
+                    Sélections
+                </p>
+
+                <div class="flex flex-wrap gap-2">
+
+                    {% for selection in pari.selections %}
+
+                        <span class="w-10 h-10
+                                     rounded-lg
+                                     bg-indigo-100
+                                     text-indigo-700
+                                     flex items-center
+                                     justify-center
+                                     font-bold">
+
+                            {{ selection.numero }}
+
+                        </span>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+
+            <!-- GAIN -->
+
+            {% if pari.est_verifie %}
+
+            <div class="border-t pt-5">
+
+                <p class="text-sm text-gray-500">
+                    Gain
+                </p>
+
+                <p class="text-3xl font-bold
+                          {% if pari.est_gagnant %}
+                              text-green-600
+                          {% endif %}">
+
+                    {{ pari.montant_gain }}
+                    FCFA
+
+                </p>
+
+            </div>
+
+            {% endif %}
+
+
+            {% if pari.date_verification %}
+
+            <div class="text-xs text-gray-400">
+
+                Vérifié le
+                {{ pari.date_verification|date:"d/m/Y à H:i" }}
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

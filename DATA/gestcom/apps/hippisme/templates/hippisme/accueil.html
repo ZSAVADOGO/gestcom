@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}Hippisme{% endblock %}
+
+{% block content %}
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <div class="mb-8">
+
+        <h1 class="text-2xl font-bold text-gray-900">
+            Gestion hippique
+        </h1>
+
+        <p class="text-gray-500 mt-1">
+            Programme, courses, chevaux, jockeys et partants.
+        </p>
+
+    </div>
+
+
+    <!-- Statistiques -->
+
+    <div class="grid grid-cols-1 sm:grid-cols-2
+                lg:grid-cols-4 gap-5 mb-8">
+
+        <div class="bg-white rounded-xl p-5
+                    border border-gray-200 shadow-sm">
+
+            <p class="text-sm text-gray-500">
+                Hippodromes
+            </p>
+
+            <p class="text-3xl font-bold mt-2">
+                {{ statistiques.nombre_hippodromes }}
+            </p>
+
+        </div>
+
+
+        <div class="bg-white rounded-xl p-5
+                    border border-gray-200 shadow-sm">
+
+            <p class="text-sm text-gray-500">
+                Chevaux
+            </p>
+
+            <p class="text-3xl font-bold mt-2">
+                {{ statistiques.nombre_chevaux }}
+            </p>
+
+        </div>
+
+
+        <div class="bg-white rounded-xl p-5
+                    border border-gray-200 shadow-sm">
+
+            <p class="text-sm text-gray-500">
+                Courses aujourd'hui
+            </p>
+
+            <p class="text-3xl font-bold mt-2">
+                {{ statistiques.nombre_courses }}
+            </p>
+
+        </div>
+
+
+        <div class="bg-white rounded-xl p-5
+                    border border-gray-200 shadow-sm">
+
+            <p class="text-sm text-gray-500">
+                Partants
+            </p>
+
+            <p class="text-3xl font-bold mt-2">
+                {{ statistiques.nombre_partants }}
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- Réunions -->
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <div class="bg-white rounded-xl
+                    border border-gray-200 shadow-sm">
+
+            <div class="p-5 border-b border-gray-200">
+
+                <div class="flex justify-between">
+
+                    <h2 class="font-bold text-lg">
+                        Réunions du jour
+                    </h2>
+
+                    <a href="{% url 'hippisme:reunions' %}"
+                       class="text-indigo-600 text-sm">
+                        Voir tout
+                    </a>
+
+                </div>
+
+            </div>
+
+
+            <div class="divide-y">
+
+                {% for reunion in reunions_du_jour %}
+
+                <a href="{% url 'hippisme:reunion-detail' reunion.pk %}"
+                   class="block p-5 hover:bg-gray-50">
+
+                    <div class="flex justify-between">
+
+                        <div>
+
+                            <p class="font-semibold">
+                                {{ reunion.nom }}
+                            </p>
+
+                            <p class="text-sm text-gray-500">
+                                {{ reunion.hippodrome.nom }}
+                            </p>
+
+                        </div>
+
+                        <span class="text-sm text-gray-500">
+                            {{ reunion.heure_debut|time:"H:i" }}
+                        </span>
+
+                    </div>
+
+                </a>
+
+                {% empty %}
+
+                <p class="p-5 text-gray-500">
+                    Aucune réunion aujourd'hui.
+                </p>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+
+        <!-- Courses -->
+
+        <div class="bg-white rounded-xl
+                    border border-gray-200 shadow-sm">
+
+            <div class="p-5 border-b border-gray-200">
+
+                <div class="flex justify-between">
+
+                    <h2 class="font-bold text-lg">
+                        Courses du jour
+                    </h2>
+
+                    <a href="{% url 'hippisme:courses' %}"
+                       class="text-indigo-600 text-sm">
+                        Voir tout
+                    </a>
+
+                </div>
+
+            </div>
+
+
+            <div class="divide-y">
+
+                {% for course in courses_du_jour %}
+
+                <a href="{% url 'hippisme:course-detail' course.pk %}"
+                   class="block p-5 hover:bg-gray-50">
+
+                    <div class="flex justify-between">
+
+                        <div>
+
+                            <p class="font-semibold">
+
+                                R{{ course.reunion.numero }}
+                                -
+                                C{{ course.numero }}
+
+                            </p>
+
+                            <p class="text-sm text-gray-500">
+                                {{ course.nom }}
+                            </p>
+
+                        </div>
+
+                        <span class="text-sm font-medium">
+                            {{ course.heure_depart|time:"H:i" }}
+                        </span>
+
+                    </div>
+
+                </a>
+
+                {% empty %}
+
+                <p class="p-5 text-gray-500">
+                    Aucune course aujourd'hui.
+                </p>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

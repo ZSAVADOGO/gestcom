@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}
+Communiqués
+{% endblock %}
+
+{% block content %}
+
+<div class="max-w-7xl mx-auto">
+
+    <!-- HEADER -->
+
+    <div class="flex flex-col md:flex-row
+                md:items-center
+                md:justify-between
+                gap-4 mb-6">
+
+        <div>
+
+            <h1 class="text-2xl font-bold">
+                Communiqués
+            </h1>
+
+            <p class="text-gray-500 mt-1">
+                Retrouvez les dernières informations
+                et annonces.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- FILTRES -->
+
+    <div class="bg-white rounded-xl shadow-sm
+                border border-gray-200
+                p-4 mb-6">
+
+        <form method="get"
+              class="grid grid-cols-1
+                     md:grid-cols-3 gap-4">
+
+            <input type="text"
+                   name="q"
+                   value="{{ request.GET.q }}"
+                   placeholder="Rechercher..."
+                   class="border rounded-lg px-4 py-2
+                          focus:ring-2
+                          focus:ring-indigo-500">
+
+            <select name="type"
+                    class="border rounded-lg px-4 py-2">
+
+                <option value="">
+                    Tous les types
+                </option>
+
+                {% for value, label in types %}
+                    <option value="{{ value }}"
+                            {% if request.GET.type == value %}
+                            selected
+                            {% endif %}>
+
+                        {{ label }}
+
+                    </option>
+                {% endfor %}
+
+            </select>
+
+            <button type="submit"
+                    class="bg-indigo-600
+                           text-white rounded-lg
+                           px-4 py-2
+                           hover:bg-indigo-700">
+
+                Rechercher
+
+            </button>
+
+        </form>
+
+    </div>
+
+
+    <!-- LISTE -->
+
+    <div class="grid grid-cols-1
+                md:grid-cols-2
+                xl:grid-cols-3 gap-6">
+
+        {% for communique in communiques %}
+
+        <article class="bg-white rounded-xl
+                         shadow-sm
+                         border border-gray-200
+                         overflow-hidden
+                         hover:shadow-md
+                         transition">
+
+            {% if communique.image %}
+
+                <img src="{{ communique.image.url }}"
+                     alt="{{ communique.titre }}"
+                     class="w-full h-48 object-cover">
+
+            {% endif %}
+
+            <div class="p-5">
+
+                <div class="flex justify-between
+                            items-center mb-3">
+
+                    <span class="text-xs
+                                 font-semibold
+                                 px-2 py-1
+                                 rounded-full
+                                 bg-indigo-100
+                                 text-indigo-700">
+
+                        {{ communique.get_type_display }}
+
+                    </span>
+
+                    {% if communique.est_a_la_une %}
+
+                        <span class="text-xs
+                                     font-semibold
+                                     text-orange-600">
+
+                            À la une
+
+                        </span>
+
+                    {% endif %}
+
+                </div>
+
+                <h2 class="text-lg font-bold mb-2">
+
+                    {{ communique.titre }}
+
+                </h2>
+
+                <p class="text-gray-600 text-sm">
+
+                    {{ communique.resume|default:communique.contenu|truncatechars:150 }}
+
+                </p>
+
+                <div class="mt-4 pt-4
+                            border-t
+                            flex justify-between
+                            items-center">
+
+                    <span class="text-xs text-gray-400">
+
+                        {{ communique.date_publication|date:"d/m/Y H:i" }}
+
+                    </span>
+
+                    <a href="{% url 'communications:detail' communique.pk %}"
+                       class="text-indigo-600
+                              font-medium
+                              text-sm">
+
+                        Lire →
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </article>
+
+        {% empty %}
+
+        <div class="col-span-full
+                    bg-white rounded-xl
+                    p-10 text-center">
+
+            <p class="text-gray-500">
+                Aucun communiqué disponible.
+            </p>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+</div>
+
+{% endblock %}

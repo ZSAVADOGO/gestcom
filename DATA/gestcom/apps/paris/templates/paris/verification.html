@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}
+Vérification de ticket
+{% endblock %}
+
+{% block content %}
+
+<div class="max-w-xl mx-auto">
+
+    <div class="text-center mb-8">
+
+        <div class="mx-auto w-16 h-16
+                    bg-indigo-100
+                    text-indigo-700
+                    rounded-2xl
+                    flex items-center
+                    justify-center
+                    text-3xl">
+
+            🎫
+
+        </div>
+
+        <h1 class="text-2xl font-bold mt-4">
+
+            Vérifier un ticket
+
+        </h1>
+
+        <p class="text-gray-500 mt-2">
+
+            Saisissez le numéro de votre ticket
+            pour vérifier son résultat.
+
+        </p>
+
+    </div>
+
+
+    <div class="bg-white
+                rounded-2xl
+                border
+                shadow-sm
+                p-6 md:p-8">
+
+        <form method="post">
+
+            {% csrf_token %}
+
+            <label class="block
+                          text-sm
+                          font-medium
+                          mb-2">
+
+                Numéro du ticket
+
+            </label>
+
+            <input type="text"
+                   name="numero_ticket"
+                   value="{{ request.POST.numero_ticket }}"
+                   placeholder="Ex. PMU202609080001"
+                   required
+                   autofocus
+                   class="w-full
+                          border
+                          rounded-xl
+                          px-4 py-3
+                          text-lg
+                          focus:ring-2
+                          focus:ring-indigo-500">
+
+            <button type="submit"
+                    class="w-full
+                           mt-4
+                           bg-indigo-600
+                           hover:bg-indigo-700
+                           text-white
+                           font-semibold
+                           rounded-xl
+                           py-3">
+
+                Vérifier le ticket
+
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% endblock %}

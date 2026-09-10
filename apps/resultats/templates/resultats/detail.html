@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}
+Résultat - {{ resultat.course.nom }}
+{% endblock %}
+
+{% block content %}
+
+<div class="max-w-4xl mx-auto">
+
+    <a href="{% url 'resultats:liste' %}"
+       class="text-indigo-600 text-sm">
+
+        ← Retour aux résultats
+
+    </a>
+
+    <div class="bg-white
+                rounded-xl
+                border
+                shadow-sm
+                mt-4">
+
+        <div class="p-6 border-b">
+
+            <div class="flex justify-between">
+
+                <div>
+
+                    <p class="text-sm text-gray-500">
+                        Course {{ resultat.course.numero }}
+                    </p>
+
+                    <h1 class="text-2xl font-bold">
+
+                        {{ resultat.course.nom }}
+
+                    </h1>
+
+                    <p class="text-gray-500 mt-1">
+
+                        {{ resultat.course.reunion.hippodrome.nom }}
+
+                    </p>
+
+                </div>
+
+                {% if resultat.est_officiel %}
+
+                    <span class="bg-green-100
+                                 text-green-700
+                                 px-3 py-1
+                                 rounded-full
+                                 h-fit">
+
+                        Résultat officiel
+
+                    </span>
+
+                {% else %}
+
+                    <span class="bg-yellow-100
+                                 text-yellow-700
+                                 px-3 py-1
+                                 rounded-full
+                                 h-fit">
+
+                        Provisoire
+
+                    </span>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+
+        <!-- ARRIVÉE -->
+
+        <div class="p-6">
+
+            <h2 class="text-xl font-bold mb-5">
+                Arrivée
+            </h2>
+
+            <div class="space-y-3">
+
+                {% for ligne in resultat.arrivee %}
+
+                <div class="flex items-center
+                            gap-4
+                            p-4
+                            bg-gray-50
+                            rounded-lg">
+
+                    <div class="w-10 h-10
+                                rounded-full
+                                bg-indigo-600
+                                text-white
+                                flex items-center
+                                justify-center
+                                font-bold">
+
+                        {{ ligne.position }}
+
+                    </div>
+
+                    <div>
+
+                        <p class="font-bold">
+                            N° {{ ligne.numero }}
+                        </p>
+
+                        {% if ligne.cheval %}
+                            <p class="text-sm text-gray-500">
+                                {{ ligne.cheval }}
+                            </p>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+                {% empty %}
+
+                    <p class="text-gray-500">
+                        Aucun classement disponible.
+                    </p>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+
+        <!-- RAPPORTS -->
+
+        {% if resultat.rapports %}
+
+        <div class="p-6 border-t">
+
+            <h2 class="text-xl font-bold mb-4">
+                Rapports
+            </h2>
+
+            <div class="grid md:grid-cols-3 gap-4">
+
+                {% for type, rapport in resultat.rapports.items %}
+
+                <div class="border
+                            rounded-lg
+                            p-4">
+
+                    <p class="text-sm text-gray-500">
+                        {{ type|title }}
+                    </p>
+
+                    <p class="text-xl font-bold mt-1">
+
+                        {{ rapport }}
+
+                    </p>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

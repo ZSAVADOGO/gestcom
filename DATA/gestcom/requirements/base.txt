@@ -1,0 +1,10 @@
+Django>=5.2,<5.3
+djangorestframework
+django-filter
+psycopg[binary]
+python-dotenv
+Pillow
+drf-spectacular
+
+django-tailwind
+beautifulsoup4 requests # Pour les Scrapping 

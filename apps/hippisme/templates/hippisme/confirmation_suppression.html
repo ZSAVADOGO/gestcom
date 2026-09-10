@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Confirmation{% endblock %}
+
+{% block content %}
+
+<div class="max-w-xl mx-auto px-4 py-16">
+
+    <div class="bg-white rounded-xl shadow-sm
+                border border-gray-200 p-8 text-center">
+
+        <div class="w-16 h-16 mx-auto mb-5
+                    rounded-full bg-red-100
+                    flex items-center justify-center">
+
+            <i class="fas fa-trash text-red-600 text-xl"></i>
+
+        </div>
+
+        <h1 class="text-xl font-bold text-gray-900">
+            Confirmer la suppression
+        </h1>
+
+        <p class="text-gray-500 mt-3">
+            Êtes-vous sûr de vouloir supprimer
+            <strong>{{ object }}</strong> ?
+        </p>
+
+        <p class="text-sm text-red-600 mt-3">
+            Cette opération peut être impossible à annuler.
+        </p>
+
+
+        <form method="post"
+              class="flex justify-center gap-3 mt-8">
+
+            {% csrf_token %}
+
+            <a href="javascript:history.back()"
+               class="px-5 py-2.5 rounded-lg
+                      border border-gray-300
+                      text-gray-700">
+
+                Annuler
+
+            </a>
+
+
+            <button
+                type="submit"
+                class="px-5 py-2.5 rounded-lg
+                       bg-red-600 text-white
+                       hover:bg-red-700">
+
+                Supprimer
+
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,406 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {{ titre|default:"Détail" }} | Hippisme
+{% endblock %}
+
+{% block content %}
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- ============================= -->
+    <!-- EN-TÊTE -->
+    <!-- ============================= -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+
+        <div>
+            <div class="flex items-center gap-3">
+
+                <a href="{{ retour_url }}"
+                   class="inline-flex items-center justify-center w-10 h-10 rounded-lg
+                          bg-gray-100 text-gray-600 hover:bg-gray-200 transition"
+                   title="Retour">
+
+                    <i class="fas fa-arrow-left"></i>
+
+                </a>
+
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold text-gray-900">
+                        {{ titre|default:"Détail" }}
+                    </h1>
+
+                    {% if sous_titre %}
+                        <p class="text-gray-500 mt-1">
+                            {{ sous_titre }}
+                        </p>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+
+
+        <!-- ACTIONS -->
+        <div class="flex items-center gap-2">
+
+            {% if url_modifier %}
+                <a href="{{ url_modifier }}"
+                   class="inline-flex items-center gap-2 px-4 py-2
+                          bg-indigo-600 text-white rounded-lg
+                          hover:bg-indigo-700 transition">
+
+                    <i class="fas fa-edit"></i>
+                    Modifier
+
+                </a>
+            {% endif %}
+
+            {% if url_supprimer %}
+                <a href="{{ url_supprimer }}"
+                   class="inline-flex items-center gap-2 px-4 py-2
+                          bg-red-600 text-white rounded-lg
+                          hover:bg-red-700 transition">
+
+                    <i class="fas fa-trash"></i>
+                    Supprimer
+
+                </a>
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <!-- ============================= -->
+    <!-- CARTE PRINCIPALE -->
+    <!-- ============================= -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+
+        <!-- EN-TÊTE DE LA CARTE -->
+        <div class="px-6 py-5 border-b border-gray-200 bg-gray-50">
+
+            <div class="flex items-center gap-3">
+
+                {% if icone %}
+                    <div class="w-11 h-11 rounded-xl bg-indigo-100
+                                text-indigo-600 flex items-center justify-center">
+
+                        <i class="{{ icone }} text-lg"></i>
+
+                    </div>
+                {% endif %}
+
+                <div>
+
+                    <h2 class="text-lg font-semibold text-gray-900">
+                        {{ objet.nom|default:objet }}
+                    </h2>
+
+                    {% if description %}
+                        <p class="text-sm text-gray-500">
+                            {{ description }}
+                        </p>
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ============================= -->
+        <!-- INFORMATIONS -->
+        <!-- ============================= -->
+        <div class="p-6">
+
+            {% if informations %}
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                    {% for information in informations %}
+
+                        <div>
+
+                            <p class="text-sm text-gray-500">
+                                {{ information.label }}
+                            </p>
+
+                            <p class="font-semibold text-gray-900 mt-1">
+                                {{ information.valeur|default:"-" }}
+                            </p>
+
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            {% else %}
+
+                <!--
+                    Aucun champ dynamique basé sur _meta ici.
+                    Les informations sont préparées dans views.py.
+                -->
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                    <div>
+                        <p class="text-sm text-gray-500">
+                            Numéro d'enregistrement
+                        </p>
+
+                        <p class="font-semibold">
+                            {{ objet.numero_enregistrement|default:"-" }}
+                        </p>
+                    </div>
+
+
+                    <div>
+                        <p class="text-sm text-gray-500">
+                            Nom
+                        </p>
+
+                        <p class="font-semibold">
+                            {{ objet.nom|default:"-" }}
+                        </p>
+                    </div>
+
+
+                    <div>
+                        <p class="text-sm text-gray-500">
+                            Sexe
+                        </p>
+
+                        <p class="font-semibold">
+                            {{ objet.get_sexe_display|default:"-" }}
+                        </p>
+                    </div>
+
+
+                    <div>
+                        <p class="text-sm text-gray-500">
+                            Race
+                        </p>
+
+                        <p class="font-semibold">
+                            {{ objet.race|default:"-" }}
+                        </p>
+                    </div>
+
+
+                    <div>
+                        <p class="text-sm text-gray-500">
+                            Entraîneur
+                        </p>
+
+                        <p class="font-semibold">
+                            {{ objet.entraineur_actuel.nom_complet|default:"-" }}
+                        </p>
+                    </div>
+
+
+                    <div>
+                        <p class="text-sm text-gray-500">
+                            Propriétaire
+                        </p>
+
+                        <p class="font-semibold">
+                            {{ objet.proprietaire|default:"-" }}
+                        </p>
+                    </div>
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <!-- ============================= -->
+    <!-- SECTIONS ASSOCIÉES -->
+    <!-- ============================= -->
+
+    {% if sections %}
+
+        <div class="mt-6 space-y-6">
+
+            {% for section in sections %}
+
+                <div class="bg-white rounded-2xl shadow-sm
+                            border border-gray-200 overflow-hidden">
+
+                    <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+
+                        <h3 class="font-semibold text-gray-900">
+                            {{ section.titre }}
+                        </h3>
+
+                        {% if section.description %}
+                            <p class="text-sm text-gray-500 mt-1">
+                                {{ section.description }}
+                            </p>
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="p-6">
+
+                        {% if section.elements %}
+
+                            <div class="space-y-3">
+
+                                {% for element in section.elements %}
+
+                                    <div class="flex flex-col md:flex-row
+                                                md:items-center md:justify-between
+                                                gap-3 p-4 rounded-xl
+                                                bg-gray-50 hover:bg-gray-100
+                                                transition">
+
+                                        <div>
+
+                                            {% if element.titre %}
+                                                <p class="font-semibold text-gray-900">
+                                                    {{ element.titre }}
+                                                </p>
+                                            {% endif %}
+
+                                            {% if element.sous_titre %}
+                                                <p class="text-sm text-gray-500">
+                                                    {{ element.sous_titre }}
+                                                </p>
+                                            {% endif %}
+
+                                        </div>
+
+
+                                        {% if element.url %}
+
+                                            <a href="{{ element.url }}"
+                                               class="inline-flex items-center gap-2
+                                                      text-indigo-600
+                                                      hover:text-indigo-800
+                                                      font-medium">
+
+                                                Voir
+                                                <i class="fas fa-arrow-right text-xs"></i>
+
+                                            </a>
+
+                                        {% endif %}
+
+                                    </div>
+
+                                {% endfor %}
+
+                            </div>
+
+                        {% else %}
+
+                            <p class="text-sm text-gray-500">
+                                Aucun élément disponible.
+                            </p>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    {% endif %}
+
+
+    <!-- ============================= -->
+    <!-- INFORMATIONS TECHNIQUES -->
+    <!-- ============================= -->
+
+    {% if audit %}
+
+        <div class="mt-6 bg-white rounded-2xl shadow-sm
+                    border border-gray-200 overflow-hidden">
+
+            <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+
+                <h3 class="font-semibold text-gray-900">
+                    Informations de suivi
+                </h3>
+
+            </div>
+
+            <div class="p-6">
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                    {% if audit.date_creation %}
+                        <div>
+                            <p class="text-sm text-gray-500">
+                                Date de création
+                            </p>
+
+                            <p class="font-semibold">
+                                {{ audit.date_creation|date:"d/m/Y H:i" }}
+                            </p>
+                        </div>
+                    {% endif %}
+
+
+                    {% if audit.date_modification %}
+                        <div>
+                            <p class="text-sm text-gray-500">
+                                Dernière modification
+                            </p>
+
+                            <p class="font-semibold">
+                                {{ audit.date_modification|date:"d/m/Y H:i" }}
+                            </p>
+                        </div>
+                    {% endif %}
+
+
+                    {% if audit.cree_par %}
+                        <div>
+                            <p class="text-sm text-gray-500">
+                                Créé par
+                            </p>
+
+                            <p class="font-semibold">
+                                {{ audit.cree_par }}
+                            </p>
+                        </div>
+                    {% endif %}
+
+
+                    {% if audit.modifie_par %}
+                        <div>
+                            <p class="text-sm text-gray-500">
+                                Modifié par
+                            </p>
+
+                            <p class="font-semibold">
+                                {{ audit.modifie_par }}
+                            </p>
+                        </div>
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+    {% endif %}
+
+
+</div>
+
+{% endblock %}

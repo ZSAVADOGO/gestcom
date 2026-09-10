@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}
+Tickets
+{% endblock %}
+
+{% block content %}
+
+<div class="max-w-7xl mx-auto">
+
+    <div class="flex justify-between
+                items-center mb-6">
+
+        <div>
+
+            <h1 class="text-2xl font-bold">
+                Tickets
+            </h1>
+
+            <p class="text-gray-500">
+                Historique et suivi des tickets.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="bg-white
+                rounded-xl
+                border
+                shadow-sm
+                overflow-hidden">
+
+        <div class="overflow-x-auto">
+
+            <table class="w-full text-sm">
+
+                <thead class="bg-gray-50 border-b">
+
+                    <tr>
+
+                        <th class="text-left p-4">
+                            Ticket
+                        </th>
+
+                        <th class="text-left p-4">
+                            Type
+                        </th>
+
+                        <th class="text-left p-4">
+                            Course
+                        </th>
+
+                        <th class="text-left p-4">
+                            Mise
+                        </th>
+
+                        <th class="text-left p-4">
+                            Statut
+                        </th>
+
+                        <th class="text-right p-4">
+                            Action
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody class="divide-y">
+
+                {% for pari in paris %}
+
+                    <tr class="hover:bg-gray-50">
+
+                        <td class="p-4 font-semibold">
+                            {{ pari.numero_ticket }}
+                        </td>
+
+                        <td class="p-4">
+                            {{ pari.get_type_display }}
+                        </td>
+
+                        <td class="p-4">
+                            {{ pari.course.nom }}
+                        </td>
+
+                        <td class="p-4">
+                            {{ pari.montant_mise }} FCFA
+                        </td>
+
+                        <td class="p-4">
+
+                            {% if pari.est_gagnant %}
+
+                                <span class="text-green-700
+                                             bg-green-100
+                                             px-2 py-1
+                                             rounded-full text-xs">
+
+                                    Gagnant
+
+                                </span>
+
+                            {% elif pari.est_perdant %}
+
+                                <span class="text-red-700
+                                             bg-red-100
+                                             px-2 py-1
+                                             rounded-full text-xs">
+
+                                    Perdant
+
+                                </span>
+
+                            {% else %}
+
+                                <span class="text-gray-700
+                                             bg-gray-100
+                                             px-2 py-1
+                                             rounded-full text-xs">
+
+                                    {{ pari.get_statut_display }}
+
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <td class="p-4 text-right">
+
+                            <a href="{% url 'paris:detail' pari.pk %}"
+                               class="text-indigo-600">
+
+                                Voir →
+
+                            </a>
+
+                        </td>
+
+                    </tr>
+
+                {% empty %}
+
+                    <tr>
+
+                        <td colspan="6"
+                            class="p-10
+                                   text-center
+                                   text-gray-500">
+
+                            Aucun ticket.
+
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
