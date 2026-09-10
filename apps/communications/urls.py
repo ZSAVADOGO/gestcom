@@ -1,24 +1,12 @@
 from django.urls import path
 
 from django.views.generic import RedirectView  # <-- IMPORT MANQUANT
+from . import views
 
-from .views import (
-    CommuniqueListView,
-    CommuniqueDetailView,
-)
 
 app_name = "communications"
 
 urlpatterns = [
-    path(
-        "",
-        CommuniqueListView.as_view(),
-        name="liste"
-    ),
-
-    path(
-        "<int:pk>/",
-        CommuniqueDetailView.as_view(),
-        name="detail"
-    ),
+    path("", views.communique_dashboard, name="liste"),
+    path("api/lister/", views.api_lister_communiques, name="api_lister"),
 ]

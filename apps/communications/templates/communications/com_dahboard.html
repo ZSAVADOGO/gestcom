@@ -1,0 +1,595 @@
+{% extends "base.html" %}
+
+{% block title %}TurfPro — Communiqués & Annonces{% endblock %}
+
+{% block header_title %}Communiqués & Annonces{% endblock %}
+{% block header_subtitle %}Gestion, publication et édition des communiqués officiels.{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- 1. Recherche libre avec croix rouge (Col: 3) -->
+ <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-3.5">
+  <form id="form-filtres-communiques" method="get" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-2.5 items-center">
+    
+    <!-- 1. Recherche libre (Entrée pour valider, ✕ pour effacer) (Col: 3) -->
+    <div class="md:col-span-3 relative" data-clearable>
+      <input type="text" 
+             name="q" 
+             id="filtre-recherche" 
+             value="{{ request.GET.q }}" 
+             placeholder="Rechercher (Touche Entrée)..." 
+             data-reset-group="communiques"
+             class="w-full border border-slate-300 rounded-lg pl-3 pr-8 py-1.5 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all">
+      
+      <button type="button" 
+              data-clear-btn 
+              tabindex="-1"
+              class="{% if not request.GET.q %}hidden{% endif %} absolute right-2.5 top-1/2 -translate-y-1/2 text-rose-500 hover:text-rose-700 font-bold text-xs p-1 rounded-md hover:bg-rose-50 transition-colors" 
+              title="Effacer la recherche">
+        ✕
+      </button>
+    </div>
+
+    <!-- 2. Filtre Type (Col: 2) -->
+    <div class="md:col-span-2">
+      <select name="type" 
+              id="filtre-type" 
+              data-reset-group="communiques"
+              class="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+        <option value="">Type : Tous</option>
+        {% for code, libelle in types_communique %}
+          <option value="{{ code }}" {% if request.GET.type == code %}selected{% endif %}>
+            {{ libelle }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- 3. Filtre Statut (Col: 2) -->
+    <div class="md:col-span-2">
+      <select name="statut" 
+              id="filtre-statut" 
+              data-reset-group="communiques"
+              class="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+        <option value="">Statut : Tous</option>
+        {% for code, libelle in statuts_communique %}
+          <option value="{{ code }}" {% if request.GET.statut == code %}selected{% endif %}>
+            {{ libelle }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- 4. Plage de Dates : Début & Fin (Col: 3) -->
+    <div class="md:col-span-3 flex items-center gap-1.5">
+      <input type="date" 
+             name="date_debut" 
+             id="filtre-date-debut" 
+             value="{{ request.GET.date_debut }}" 
+             data-reset-group="communiques"
+             title="Date de début"
+             class="w-full border border-slate-300 text-slate-700 rounded-lg px-2 py-1.5 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white">
+      
+      <span class="text-slate-400 font-semibold text-xs shrink-0">à</span>
+      
+      <input type="date" 
+             name="date_fin" 
+             id="filtre-date-fin" 
+             value="{{ request.GET.date_fin }}" 
+             data-reset-group="communiques"
+             title="Date de fin"
+             class="w-full border border-slate-300 text-slate-700 rounded-lg px-2 py-1.5 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white">
+      
+      <!-- Bouton Réinitialiser le groupe -->
+      <button type="button" 
+              data-reset-btn="communiques"
+              onclick="reinitialiserGroupe('communiques')" 
+              class="{% if not request.GET.q and not request.GET.type and not request.GET.statut and not request.GET.date_debut and not request.GET.date_fin %}hidden{% endif %} p-1.5 bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200 hover:border-rose-200 rounded-lg transition-all shrink-0" 
+              title="Réinitialiser tous les filtres">
+        ↺
+      </button>
+    </div>
+
+    <!-- 5. Bouton d'Action : + Ajouter (Col: 2) -->
+    <div class="md:col-span-2 flex justify-end">
+      <button type="button" 
+              onclick="ouvrirModalCreation()" 
+              class="w-full inline-flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-3 py-1.5 rounded-lg text-xs sm:text-sm shadow-sm transition active:scale-95 whitespace-nowrap">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        <span>+ Ajouter</span>
+      </button>
+    </div>
+
+  </form>
+</div>
+
+  <!-- TABLEAU DES COMMUNIQUÉS -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-900 text-slate-200 uppercase text-xs tracking-wider">
+          <tr>
+            <th class="px-4 py-3 text-left">Titre</th>
+            <th class="px-4 py-3 text-left">Type</th>
+            <th class="px-4 py-3 text-left">Statut</th>
+            <th class="px-4 py-3 text-left">Mise en avant</th>
+            <th class="px-4 py-3 text-left">Publication</th>
+            <th class="px-4 py-3 text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200 [&>tr:nth-child(odd)]:bg-slate-50/50 [&>tr]:hover:bg-emerald-50/40 [&>tr]:transition-colors [&>tr>td]:px-4 [&>tr>td]:py-3">
+          {% for communique in communiques %}
+          <tr>
+            <!-- Titre & Résumé -->
+            <td class="max-w-[280px]">
+              <div class="flex flex-col">
+                <span class="font-medium text-slate-900 truncate block">
+                  {{ communique.titre }}
+                </span>
+                <span class="text-xs text-slate-400 truncate block">
+                  {{ communique.resume|default:communique.contenu|truncatechars:50 }}
+                </span>
+              </div>
+            </td>
+
+            <!-- Type -->
+            <td>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                {{ communique.get_type_display }}
+              </span>
+            </td>
+
+            <!-- Statut -->
+            <td>
+              {% if communique.statut == 'PUBLIE' %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Publié</span>
+              {% elif communique.statut == 'PROGRAMME' %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">Programmé</span>
+              {% elif communique.statut == 'ARCHIVE' %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600">Archivé</span>
+              {% else %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">Brouillon</span>
+              {% endif %}
+            </td>
+
+            <!-- Mise en avant -->
+            <td>
+              {% if communique.est_a_la_une %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-800">🚨 À la une</span>
+              {% else %}
+                <span class="text-xs text-slate-400 italic">Standard</span>
+              {% endif %}
+            </td>
+
+            <!-- Date -->
+            <td class="text-slate-600 font-mono text-xs">
+              {{ communique.date_publication|date:"d/m/Y H:i"|default:"-" }}
+            </td>
+
+            <!-- Actions -->
+            <td class="text-center">
+              <div class="inline-flex items-center gap-1.5">
+                <button type="button" 
+                        onclick="preparerEtOuvrirModaleDetail(this)"
+                        data-titre="{{ communique.titre|escapejs }}"
+                        data-type="{{ communique.get_type_display|escapejs }}"
+                        data-une="{{ communique.est_a_la_une|yesno:'true,false' }}"
+                        data-date="{{ communique.date_publication|date:'d/m/Y à H:i' }}"
+                        data-contenu="{{ communique.contenu|safe }}"
+                        data-image="{% if communique.image %}{{ communique.image.url }}{% endif %}"
+                        class="px-2 py-1 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded transition">
+                  Aperçu
+                </button>
+
+                {% comment %} <button type="button" 
+                        onclick="editerCommunique(this)"
+                        data-id="{{ communique.id }}"
+                        data-titre="{{ communique.titre|escapejs }}"
+                        data-type="{{ communique.type }}"
+                        data-statut="{{ communique.statut }}"
+                        data-resume="{{ communique.resume|escapejs }}"
+                        data-une="{{ communique.est_a_la_une|yesno:'true,false' }}"
+                        data-date="{{ communique.date_publication|date:'Y-m-d\\TH:i' }}"
+                        data-contenu="{{ communique.contenu|escapejs }}"
+                        class="px-2 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded transition">
+                  Modifier
+                </button> {% endcomment %}
+                <button type="button" 
+                    onclick="editerCommunique(this)"
+                    data-id="{{ communique.id }}"
+                    data-titre="{{ communique.titre|escapejs }}"
+                    data-type="{{ communique.type }}"
+                    data-statut="{{ communique.statut }}"
+                    data-resume="{{ communique.resume|default:''|escapejs }}"
+                    data-une="{{ communique.est_a_la_une|yesno:'true,false' }}"
+                    data-date="{% if communique.date_publication %}{{ communique.date_publication|date:'Y-m-d\TH:i' }}{% endif %}"
+                    data-contenu="{{ communique.contenu|escapejs }}"
+                    class="px-2 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded transition">
+            Modifier
+            </button>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center text-slate-400 py-10">
+              Aucun communiqué disponible.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================= -->
+<!-- MODALE D'ÉDITION ET CRÉATION DE COMMUNIQUÉ                -->
+<!-- ========================================================= -->
+<div id="modal-communique-form" class="modal-overlay hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden border border-slate-200">
+    
+    <div class="flex items-center justify-between px-6 py-4 bg-slate-900 text-white">
+      <h2 class="text-base font-bold text-slate-100 flex items-center gap-2" id="titre-modal-form">
+        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+        </svg>
+        <span>Communiqué</span>
+      </h2>
+      <button type="button" onclick="fermerModal('modal-communique-form')" class="text-slate-400 hover:text-white text-xl leading-none transition">
+        ✕
+      </button>
+    </div>
+
+    <form id="form-communique" method="post" enctype="multipart/form-data" onsubmit="soumettreFormulaireCommunique(event)" class="p-6 space-y-4 text-xs">
+      {% csrf_token %}
+      <input type="hidden" name="id" id="communique-id">
+
+      <!-- Titre -->
+      <div>
+        <label class="block font-semibold text-slate-700 mb-1">Titre du communiqué *</label>
+        <input type="text" 
+               name="titre" 
+               id="field-titre" 
+               required 
+               class="w-full border border-slate-300 rounded-lg p-2.5 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+      </div>
+
+      <!-- Type & Statut -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Type *</label>
+          <select name="type" id="field-type" required class="w-full border border-slate-300 rounded-lg p-2.5 bg-white text-slate-800 focus:ring-2 focus:ring-emerald-500">
+            {% for code, libelle in types_communique %}
+              <option value="{{ code }}">{{ libelle }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Statut *</label>
+          <select name="statut" id="field-statut" required class="w-full border border-slate-300 rounded-lg p-2.5 bg-white text-slate-800 focus:ring-2 focus:ring-emerald-500">
+            {% for code, libelle in statuts_communique %}
+              <option value="{{ code }}">{{ libelle }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <!-- Date de publication & Image -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Date de publication</label>
+          <input type="datetime-local" 
+                 name="date_publication" 
+                 id="field-date-publication" 
+                 class="w-full border border-slate-300 rounded-lg p-2.5 text-slate-800 focus:ring-2 focus:ring-emerald-500">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Image d'illustration</label>
+          <input type="file" 
+                 name="image" 
+                 id="field-image" 
+                 accept="image/*"
+                 class="w-full border border-slate-300 rounded-lg p-2 bg-white text-slate-800 focus:ring-2 focus:ring-emerald-500">
+        </div>
+      </div>
+
+      <!-- Résumé -->
+      <div>
+        <label class="block font-semibold text-slate-700 mb-1">Résumé (courte accroche)</label>
+        <input type="text" 
+               name="resume" 
+               id="field-resume" 
+               class="w-full border border-slate-300 rounded-lg p-2.5 text-slate-800 focus:ring-2 focus:ring-emerald-500">
+      </div>
+
+      <!-- Contenu -->
+      <div>
+        <label class="block font-semibold text-slate-700 mb-1">Contenu officiel *</label>
+        <textarea name="contenu" 
+                  id="field-contenu" 
+                  rows="5" 
+                  required 
+                  class="w-full border border-slate-300 rounded-lg p-2.5 text-slate-800 focus:ring-2 focus:ring-emerald-500"></textarea>
+      </div>
+
+      <!-- À la une -->
+      <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+        <label class="inline-flex items-center gap-2 text-amber-900 font-semibold cursor-pointer select-none">
+          <input type="checkbox" 
+                 name="est_a_la_une" 
+                 id="field-est-a-la-une" 
+                 class="w-4 h-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500">
+          <span>Marquer ce communiqué comme « À LA UNE »</span>
+        </label>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex justify-end gap-3 border-t border-slate-200 pt-4">
+        <button type="button" 
+                onclick="fermerModal('modal-communique-form')" 
+                class="px-4 py-2 border border-slate-300 rounded-lg font-medium text-slate-700 hover:bg-slate-50 transition">
+          Annuler
+        </button>
+        <button type="submit" 
+                class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium shadow-sm transition">
+          Enregistrer
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+<script>
+  /* ==========================================================================
+     1. UTILITAIRES
+     ========================================================================== */
+  
+  // Récupération sécurisée du token CSRF
+  function getCSRFToken() {
+    const input = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (input && input.value) return input.value;
+    
+    const cookie = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
+    return cookie ? cookie.split('=')[1] : '';
+  }
+
+  // Décodage HTML sécurisé sans fuite mémoire
+  function decoderTexte(texte) {
+    if (!texte) return '';
+    const txt = document.createElement('textarea');
+    txt.innerHTML = texte;
+    return txt.value;
+  }
+
+  // Helper d'affichage/masquage de modale
+  function basculerModal(modalId, visible) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    if (visible) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    } else {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+  }
+
+  /* ==========================================================================
+     2. GESTION DU FORMULAIRE ET DES MODALES
+     ========================================================================== */
+
+  // Ouvrir en Mode Création
+  function ouvrirModalCreation() {
+    const form = document.getElementById('form-communique');
+    if (form) form.reset();
+
+    const inputId = document.getElementById('communique-id');
+    if (inputId) inputId.value = '';
+
+    const elTitreModal = document.getElementById('titre-modal-form');
+    if (elTitreModal) {
+      const span = elTitreModal.querySelector('span');
+      if (span) span.textContent = "Nouveau communiqué";
+      else elTitreModal.textContent = "Nouveau communiqué";
+    }
+
+    // Valeurs par défaut des selects
+    const selectType = document.getElementById('field-type');
+    if (selectType) selectType.value = 'INFORMATION';
+
+    const selectStatut = document.getElementById('field-statut');
+    if (selectStatut) selectStatut.value = 'BROUILLON';
+
+    basculerModal('modal-communique-form', true);
+  }
+
+  // Ouvrir en Mode Édition
+  function editerCommunique(btn) {
+    if (!btn || !btn.dataset) return;
+
+    const inputId = document.getElementById('communique-id');
+    if (inputId) inputId.value = btn.dataset.id || '';
+
+    const elTitreModal = document.getElementById('titre-modal-form');
+    if (elTitreModal) {
+      const span = elTitreModal.querySelector('span');
+      if (span) span.textContent = "Modifier le communiqué";
+      else elTitreModal.textContent = "Modifier le communiqué";
+    }
+
+    const fieldTitre = document.getElementById('field-titre');
+    if (fieldTitre) fieldTitre.value = decoderTexte(btn.dataset.titre);
+
+    const valType = btn.dataset.type;
+    const selectType = document.getElementById('field-type');
+    if (selectType && valType) selectType.value = valType;
+
+    const valStatut = btn.dataset.statut;
+    const selectStatut = document.getElementById('field-statut');
+    if (selectStatut && valStatut) selectStatut.value = valStatut;
+
+    const fieldResume = document.getElementById('field-resume');
+    if (fieldResume) fieldResume.value = decoderTexte(btn.dataset.resume);
+
+    const fieldContenu = document.getElementById('field-contenu');
+    if (fieldContenu) fieldContenu.value = decoderTexte(btn.dataset.contenu);
+
+    const fieldUne = document.getElementById('field-est-a-la-une');
+    if (fieldUne) fieldUne.checked = (btn.dataset.une === 'true');
+
+    const fieldDate = document.getElementById('field-date-publication');
+    if (fieldDate) fieldDate.value = btn.dataset.date || '';
+
+    basculerModal('modal-communique-form', true);
+  }
+
+  // Fermer la modale
+  function fermerModal(modalId) {
+    basculerModal(modalId, false);
+  }
+
+  // Enregistrement / Modification AJAX
+  async function soumettreFormulaireCommunique(event) {
+  event.preventDefault();
+  const form = event.target;
+  const formData = new FormData(form);
+
+  // Garantit la transmission exacte de la valeur du checkbox
+  const checkUne = document.getElementById('field-est-a-la-une');
+  if (checkUne) {
+    formData.set('est_a_la_une', checkUne.checked ? 'true' : 'false');
+  }
+
+  // Envoie la requête sur la même URL (sans le querystring des filtres)
+  const targetUrl = form.action || window.location.pathname;
+
+  try {
+    const response = await fetch(targetUrl, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': getCSRFToken(),
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: formData
+    });
+
+    if (response.ok) {
+      fermerModal('modal-communique-form');
+      window.location.reload();
+    } else {
+      const errText = await response.text();
+      console.error("Erreur Django lors de l'enregistrement :", errText);
+      alert("Une erreur est survenue lors de l'enregistrement du communiqué. Vérifiez que tous les champs requis sont remplis.");
+    }
+  } catch (err) {
+    console.error("Erreur de connexion :", err);
+    alert("Impossible de contacter le serveur.");
+  }
+}
+  /*async function soumettreFormulaireCommunique(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+
+    // On soumet vers le pathname propre (sans les query params de filtres de l'URL)
+    const targetUrl = form.action || window.location.pathname;
+
+    try {
+      const response = await fetch(targetUrl, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCSRFToken(),
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+      });
+
+      if (response.ok) {
+        fermerModal('modal-communique-form');
+        // Rechargement pour refléter les modifications
+        window.location.reload();
+      } else {
+        const errText = await response.text();
+        console.error("Erreur serveur :", errText);
+        alert("Une erreur est survenue lors de l'enregistrement du communiqué.");
+      }
+    } catch (err) {
+      console.error("Erreur réseau / JS :", err);
+      // En cas de problème réseau, fallback vers la soumission classique du formulaire
+      form.submit();
+    }
+  }*/
+
+  // Consulter le détail
+  function preparerEtOuvrirModaleDetail(btn) {
+    if (!btn || !btn.dataset) return;
+    if (typeof window.afficherDetailGenerique === 'function') {
+      window.afficherDetailGenerique({
+        titre: decoderTexte(btn.dataset.titre),
+        badgePrincipal: btn.dataset.type,
+        badgeSecondaire: btn.dataset.une === 'true' ? 'À la une' : '',
+        date: btn.dataset.date,
+        contenu: decoderTexte(btn.dataset.contenu),
+        image: btn.dataset.image,
+        couleurBouton: '#059669'
+      });
+    }
+  }
+
+  /* ==========================================================================
+     3. GESTION CENTRALISÉE DES FILTRES (Formulaire & Événements)
+     ========================================================================== */
+
+  function soumettreFiltres() {
+    const form = document.getElementById('form-filtres-communiques');
+    if (!form) return;
+
+    const params = new URLSearchParams(new FormData(form));
+
+    // Suppression des paramètres vides de l'URL
+    for (const [key, value] of Array.from(params.entries())) {
+      if (typeof value === 'string' && !value.trim()) {
+        params.delete(key);
+      }
+    }
+
+    // Chargement de l'URL filtrée
+    window.location.href = `${window.location.pathname}?${params.toString()}`;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const formFiltres = document.getElementById('form-filtres-communiques');
+    if (!formFiltres) return;
+
+    // A. Soumission sur touche Entrée (sur la recherche textuelle)
+    formFiltres.addEventListener('submit', (e) => {
+      e.preventDefault();
+      soumettreFiltres();
+    });
+
+    // B. Filtrage instantané uniquement pour SELECT et INPUT DATE
+    const elementsDirects = formFiltres.querySelectorAll('select, input[type="date"]');
+    elementsDirects.forEach(el => {
+      el.addEventListener('change', soumettreFiltres);
+    });
+
+    // C. Prise en charge des réinitialisations déclenchées par filtre.js
+    document.addEventListener('change', (e) => {
+      // Déclenché quand la croix "data-clear-btn" vide un champ texte OU quand reinitialiserGroupe() s'exécute
+      if (e.target.closest('#form-filtres-communiques') && e.target.type === 'text') {
+        soumettreFiltres();
+      }
+    });
+  });
+
+
+</script>
+
+{% endblock %}

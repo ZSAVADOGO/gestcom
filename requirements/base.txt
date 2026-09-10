@@ -7,5 +7,7 @@ Pillow
 drf-spectacular
 
 django-tailwind
-beautifulsoup4 # Pour les Scrapping 
-requests 
+beautifulsoup4 # Pour les Scrapping
+requests
+
+django-environ # Pour creer le fichier .env et lire les variables d'environnement
