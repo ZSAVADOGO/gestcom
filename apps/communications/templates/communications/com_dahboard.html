@@ -184,19 +184,6 @@
                   Aperçu
                 </button>
 
-                {% comment %} <button type="button" 
-                        onclick="editerCommunique(this)"
-                        data-id="{{ communique.id }}"
-                        data-titre="{{ communique.titre|escapejs }}"
-                        data-type="{{ communique.type }}"
-                        data-statut="{{ communique.statut }}"
-                        data-resume="{{ communique.resume|escapejs }}"
-                        data-une="{{ communique.est_a_la_une|yesno:'true,false' }}"
-                        data-date="{{ communique.date_publication|date:'Y-m-d\\TH:i' }}"
-                        data-contenu="{{ communique.contenu|escapejs }}"
-                        class="px-2 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded transition">
-                  Modifier
-                </button> {% endcomment %}
                 <button type="button" 
                     onclick="editerCommunique(this)"
                     data-id="{{ communique.id }}"
@@ -385,90 +372,146 @@
      2. GESTION DU FORMULAIRE ET DES MODALES
      ========================================================================== */
 
-  // Ouvrir en Mode Création
-  function ouvrirModalCreation() {
-    const form = document.getElementById('form-communique');
-    if (form) form.reset();
-
-    const inputId = document.getElementById('communique-id');
-    if (inputId) inputId.value = '';
-
-    const elTitreModal = document.getElementById('titre-modal-form');
-    if (elTitreModal) {
-      const span = elTitreModal.querySelector('span');
-      if (span) span.textContent = "Nouveau communiqué";
-      else elTitreModal.textContent = "Nouveau communiqué";
-    }
-
-    // Valeurs par défaut des selects
-    const selectType = document.getElementById('field-type');
-    if (selectType) selectType.value = 'INFORMATION';
-
-    const selectStatut = document.getElementById('field-statut');
-    if (selectStatut) selectStatut.value = 'BROUILLON';
-
-    basculerModal('modal-communique-form', true);
-  }
-
-  // Ouvrir en Mode Édition
-  function editerCommunique(btn) {
-    if (!btn || !btn.dataset) return;
-
-    const inputId = document.getElementById('communique-id');
-    if (inputId) inputId.value = btn.dataset.id || '';
-
-    const elTitreModal = document.getElementById('titre-modal-form');
-    if (elTitreModal) {
-      const span = elTitreModal.querySelector('span');
-      if (span) span.textContent = "Modifier le communiqué";
-      else elTitreModal.textContent = "Modifier le communiqué";
-    }
-
-    const fieldTitre = document.getElementById('field-titre');
-    if (fieldTitre) fieldTitre.value = decoderTexte(btn.dataset.titre);
-
-    const valType = btn.dataset.type;
-    const selectType = document.getElementById('field-type');
-    if (selectType && valType) selectType.value = valType;
-
-    const valStatut = btn.dataset.statut;
-    const selectStatut = document.getElementById('field-statut');
-    if (selectStatut && valStatut) selectStatut.value = valStatut;
-
-    const fieldResume = document.getElementById('field-resume');
-    if (fieldResume) fieldResume.value = decoderTexte(btn.dataset.resume);
-
-    const fieldContenu = document.getElementById('field-contenu');
-    if (fieldContenu) fieldContenu.value = decoderTexte(btn.dataset.contenu);
-
-    const fieldUne = document.getElementById('field-est-a-la-une');
-    if (fieldUne) fieldUne.checked = (btn.dataset.une === 'true');
-
-    const fieldDate = document.getElementById('field-date-publication');
-    if (fieldDate) fieldDate.value = btn.dataset.date || '';
-
-    basculerModal('modal-communique-form', true);
-  }
-
+ 
+ 
   // Fermer la modale
   function fermerModal(modalId) {
     basculerModal(modalId, false);
   }
 
-  // Enregistrement / Modification AJAX
-  async function soumettreFormulaireCommunique(event) {
+function editerCommunique(btn) {
+  if (!btn || !btn.dataset) return;
+
+  const inputId = document.getElementById('communique-id');
+  if (inputId) inputId.value = btn.dataset.id || '';
+
+  const elTitreModal = document.getElementById('titre-modal-form');
+  if (elTitreModal) {
+    const span = elTitreModal.querySelector('span');
+    if (span) span.textContent = "Modifier le communiqué";
+    else elTitreModal.textContent = "Modifier le communiqué";
+  }
+
+  const fieldTitre = document.getElementById('field-titre');
+  if (fieldTitre) fieldTitre.value = decoderTexte(btn.dataset.titre);
+
+  const valType = btn.dataset.type;
+  const selectType = document.getElementById('field-type');
+  if (selectType && valType) selectType.value = valType;
+
+  const valStatut = btn.dataset.statut;
+  const selectStatut = document.getElementById('field-statut');
+  if (selectStatut && valStatut) selectStatut.value = valStatut;
+
+  const fieldResume = document.getElementById('field-resume');
+  if (fieldResume) fieldResume.value = decoderTexte(btn.dataset.resume);
+
+  const fieldContenu = document.getElementById('field-contenu');
+  if (fieldContenu) fieldContenu.value = decoderTexte(btn.dataset.contenu);
+
+  const fieldUne = document.getElementById('field-est-a-la-une');
+  if (fieldUne) fieldUne.checked = (btn.dataset.une === 'true');
+
+  const fieldDate = document.getElementById('field-date-publication');
+  if (fieldDate) fieldDate.value = btn.dataset.date || '';
+
+  basculerModal('modal-communique-form', true);
+}
+
+// Fonction de réinitialisation pour le bouton "Ajouter"
+function ouvrirModalCreation() {
+  const form = document.getElementById('form-communique');
+  if (form) form.reset();
+
+  const inputId = document.getElementById('communique-id');
+  if (inputId) inputId.value = '';
+
+  const elTitreModal = document.getElementById('titre-modal-form');
+  if (elTitreModal) {
+    const span = elTitreModal.querySelector('span');
+    if (span) span.textContent = "Nouveau communiqué";
+    else elTitreModal.textContent = "Nouveau communiqué";
+  }
+
+  basculerModal('modal-communique-form', true);
+}
+
+// Envoi AJAX adaptatif
+async function soumettreFormulaireCommunique(event) {
   event.preventDefault();
   const form = event.target;
   const formData = new FormData(form);
 
-  // Garantit la transmission exacte de la valeur du checkbox
-  const checkUne = document.getElementById('field-est-a-la-une');
-  if (checkUne) {
-    formData.set('est_a_la_une', checkUne.checked ? 'true' : 'false');
+  const communiqueId = document.getElementById('communique-id')?.value;
+  
+  // URL dynamic selon la présence d'un ID
+  let targetUrl = "{% url 'communications:creer_communique' %}";
+  if (communiqueId) {
+    targetUrl = `/communications/${communiqueId}/modifier/`;
   }
 
-  // Envoie la requête sur la même URL (sans le querystring des filtres)
-  const targetUrl = form.action || window.location.pathname;
+  // 1. Affichage du spinner de chargement
+  gestComAlerts.chargement("Enregistrement du communiqué en cours...");
+
+  try {
+    const response = await fetch(targetUrl, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': getCSRFToken(),
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: formData
+    });
+
+    const donnees = await response.json();
+    
+    // 2. Fermeture du loader une fois la réponse reçue
+    gestComAlerts.fermerChargement();
+
+    // 3. Gestion de l'échec HTTP
+    if (!response.ok) {
+      const msgErreur = donnees.erreur || donnees.message || "Impossible d'enregistrer le communiqué.";
+      return gestComAlerts.erreur(msgErreur);
+    }
+
+    // 4. Succès : fermeture de la modal, notification Toast et rafraîchissement
+    fermerModal('modal-communique-form');
+    
+    // Utilisation du Toast SweetAlert2 discret
+    //await gestComAlerts.toast(donnees.message || "Communiqué enregistré avec succès !", "success");
+    await gestComAlerts.succes(
+    donnees.message || "Le communiqué a été mis à jour avec succès.",
+    "Enregistrement réussi"
+);
+    
+    // Rechargement de la liste ou de la page
+    if (typeof chargerListe === 'function') {
+      chargerListe();
+    } else {
+      window.location.reload();
+    }
+
+  } catch (err) {
+    console.error("Erreur réseau / JS :", err);
+    gestComAlerts.fermerChargement();
+    gestComAlerts.erreur("Impossible de contacter le serveur.");
+  }
+}
+
+/* BON MAIS SANS ALERT
+async function soumettreFormulaireCommunique(event) {
+  event.preventDefault();
+  const form = event.target;
+  const formData = new FormData(form);
+
+  const communiqueId = document.getElementById('communique-id')?.value;
+  
+  // Construction dynamique de l'URL d'action
+  let targetUrl = "{% url 'communications:creer_communique' %}";
+  if (communiqueId) {
+    // Si la route est sous la même arborescence
+    targetUrl = `${window.location.pathname.replace(/\/$/, '')}/${communiqueId}/modifier/`;
+  }
 
   try {
     const response = await fetch(targetUrl, {
@@ -485,47 +528,14 @@
       window.location.reload();
     } else {
       const errText = await response.text();
-      console.error("Erreur Django lors de l'enregistrement :", errText);
-      alert("Une erreur est survenue lors de l'enregistrement du communiqué. Vérifiez que tous les champs requis sont remplis.");
+      console.error("Erreur enregistrement :", errText);
+      alert("Une erreur s'est produite lors de la sauvegarde.");
     }
   } catch (err) {
-    console.error("Erreur de connexion :", err);
+    console.error("Erreur réseau :", err);
     alert("Impossible de contacter le serveur.");
   }
-}
-  /*async function soumettreFormulaireCommunique(event) {
-    event.preventDefault();
-    const form = event.target;
-    const formData = new FormData(form);
-
-    // On soumet vers le pathname propre (sans les query params de filtres de l'URL)
-    const targetUrl = form.action || window.location.pathname;
-
-    try {
-      const response = await fetch(targetUrl, {
-        method: 'POST',
-        headers: {
-          'X-CSRFToken': getCSRFToken(),
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: formData
-      });
-
-      if (response.ok) {
-        fermerModal('modal-communique-form');
-        // Rechargement pour refléter les modifications
-        window.location.reload();
-      } else {
-        const errText = await response.text();
-        console.error("Erreur serveur :", errText);
-        alert("Une erreur est survenue lors de l'enregistrement du communiqué.");
-      }
-    } catch (err) {
-      console.error("Erreur réseau / JS :", err);
-      // En cas de problème réseau, fallback vers la soumission classique du formulaire
-      form.submit();
-    }
-  }*/
+}*/
 
   // Consulter le détail
   function preparerEtOuvrirModaleDetail(btn) {
