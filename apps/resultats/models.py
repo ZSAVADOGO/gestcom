@@ -14,6 +14,13 @@ class Resultat(ModeleAuditable):
         PROVISOIRE = "PROVISOIRE", "Provisoire"
         OFFICIEL = "OFFICIEL", "Officiel"
         ANNULE = "ANNULE", "Annulé"
+    
+    # Ajout des types de sources sélectionnables
+    class TypeSource(models.TextChoices):
+        MANUEL = "MANUEL", "Manuel"
+        AUTOMATIQUE = "AUTOMATIQUE", "Automatique"
+        API = "API", "API Externe"
+        SCRAPING = "SCRAPING_LONAB_BF", "Scraping le site WEB de la LONAB"
 
     """ course = models.OneToOneField(
             "Course",
@@ -51,6 +58,13 @@ class Resultat(ModeleAuditable):
         blank=True,
         verbose_name="Non-partants (NP)"
     )
+    
+    non_partants_ordre = models.CharField(
+        max_length=100,
+        default="Aucun",
+        blank=True,
+        verbose_name="Non-partants d'ordre (NPO)"
+    )
 
     # Structure : {"Ordre": 10264500, "Désordre": 25500, ...}
     rapports = models.JSONField(
@@ -80,10 +94,13 @@ class Resultat(ModeleAuditable):
         blank=True
     )
 
+    # Champ source optimisé avec choix multiples et indexé
     source = models.CharField(
-        max_length=150,
-        default="Scraper LONAB",
-        blank=True
+        max_length=20,
+        choices=TypeSource.choices,
+        default=TypeSource.MANUEL,
+        db_index=True,
+        verbose_name="Source des données"
     )
 
     donnees_brutes = models.JSONField(

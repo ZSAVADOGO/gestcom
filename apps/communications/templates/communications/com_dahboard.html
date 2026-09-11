@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}TurfPro — Communiqués & Annonces{% endblock %}
+{% block title %}GestCom - Communiqués & Annonces{% endblock %}
 
-{% block header_title %}Communiqués & Annonces{% endblock %}
+{% block header_title %}📢Communiqués & Annonces{% endblock %}
 {% block header_subtitle %}Gestion, publication et édition des communiqués officiels.{% endblock %}
 
 {% block content %}
@@ -212,6 +212,62 @@
     </div>
   </div>
 </div>
+
+<!-- BARRE DE PAGINATION (À placer juste sous le tableau) -->
+  {% if communiques.has_other_pages %}
+  <div class="px-4 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+    
+    <!-- Résumé texte sur mobile/écran large -->
+    <div class="text-xs text-slate-500">
+      Affichage de <span class="font-semibold text-slate-700">{{ communiques.start_index }}</span> à 
+      <span class="font-semibold text-slate-700">{{ communiques.end_index }}</span> sur 
+      <span class="font-semibold text-slate-700">{{ communiques.paginator.count }}</span> communiqués
+    </div>
+
+    <!-- Navigation pages -->
+    <div class="inline-flex items-center space-x-1">
+      
+      <!-- Bouton Précédent -->
+      {% if communiques.has_previous %}
+        <a href="?page={{ communiques.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.statut %}&statut={{ request.GET.statut }}{% endif %}{% if request.GET.date_debut %}&date_debut={{ request.GET.date_debut }}{% endif %}{% if request.GET.date_fin %}&date_fin={{ request.GET.date_fin }}{% endif %}" 
+           class="px-2.5 py-1 text-xs font-medium text-slate-600 bg-white border border-slate-300 rounded hover:bg-slate-100 transition">
+          &laquo; Précédent
+        </a>
+      {% else %}
+        <span class="px-2.5 py-1 text-xs font-medium text-slate-300 bg-slate-100 border border-slate-200 rounded cursor-not-allowed">
+          &laquo; Précédent
+        </span>
+      {% endif %}
+
+      <!-- Numéros de pages -->
+      {% for num in communiques.paginator.page_range %}
+        {% if communiques.number == num %}
+          <span class="px-3 py-1 text-xs font-bold text-white bg-emerald-600 rounded shadow-sm">
+            {{ num }}
+          </span>
+        {% elif num > communiques.number|add:'-3' and num < communiques.number|add:'3' %}
+          <a href="?page={{ num }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.statut %}&statut={{ request.GET.statut }}{% endif %}{% if request.GET.date_debut %}&date_debut={{ request.GET.date_debut }}{% endif %}{% if request.GET.date_fin %}&date_fin={{ request.GET.date_fin }}{% endif %}" 
+             class="px-3 py-1 text-xs font-medium text-slate-600 bg-white border border-slate-300 rounded hover:bg-slate-100 transition">
+            {{ num }}
+          </a>
+        {% endif %}
+      {% endfor %}
+
+      <!-- Bouton Suivant -->
+      {% if communiques.has_next %}
+        <a href="?page={{ communiques.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.statut %}&statut={{ request.GET.statut }}{% endif %}{% if request.GET.date_debut %}&date_debut={{ request.GET.date_debut }}{% endif %}{% if request.GET.date_fin %}&date_fin={{ request.GET.date_fin }}{% endif %}" 
+           class="px-2.5 py-1 text-xs font-medium text-slate-600 bg-white border border-slate-300 rounded hover:bg-slate-100 transition">
+          Suivant &raquo;
+        </a>
+      {% else %}
+        <span class="px-2.5 py-1 text-xs font-medium text-slate-300 bg-slate-100 border border-slate-200 rounded cursor-not-allowed">
+          Suivant &raquo;
+        </span>
+      {% endif %}
+
+    </div>
+  </div>
+  {% endif %}
 
 <!-- ========================================================= -->
 <!-- MODALE D'ÉDITION ET CRÉATION DE COMMUNIQUÉ                -->
@@ -498,44 +554,6 @@ async function soumettreFormulaireCommunique(event) {
   }
 }
 
-/* BON MAIS SANS ALERT
-async function soumettreFormulaireCommunique(event) {
-  event.preventDefault();
-  const form = event.target;
-  const formData = new FormData(form);
-
-  const communiqueId = document.getElementById('communique-id')?.value;
-  
-  // Construction dynamique de l'URL d'action
-  let targetUrl = "{% url 'communications:creer_communique' %}";
-  if (communiqueId) {
-    // Si la route est sous la même arborescence
-    targetUrl = `${window.location.pathname.replace(/\/$/, '')}/${communiqueId}/modifier/`;
-  }
-
-  try {
-    const response = await fetch(targetUrl, {
-      method: 'POST',
-      headers: {
-        'X-CSRFToken': getCSRFToken(),
-        'X-Requested-With': 'XMLHttpRequest'
-      },
-      body: formData
-    });
-
-    if (response.ok) {
-      fermerModal('modal-communique-form');
-      window.location.reload();
-    } else {
-      const errText = await response.text();
-      console.error("Erreur enregistrement :", errText);
-      alert("Une erreur s'est produite lors de la sauvegarde.");
-    }
-  } catch (err) {
-    console.error("Erreur réseau :", err);
-    alert("Impossible de contacter le serveur.");
-  }
-}*/
 
   // Consulter le détail
   function preparerEtOuvrirModaleDetail(btn) {

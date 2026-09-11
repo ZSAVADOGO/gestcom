@@ -1,11 +1,9 @@
 import re
 import time
-import json
-import requests
-from bs4 import BeautifulSoup
 from datetime import datetime
 from typing import Optional
-
+import requests
+from bs4 import BeautifulSoup
 
 BASE = "https://www.lonab.bf"
 HEADERS = {
@@ -72,15 +70,26 @@ def parse_resultats_lonab(html_content: Optional[str] = None) -> Optional[dict]:
 
     jour_semaine, date_brute, dt_obj = parse_date_lonab(full_date_str)
 
-    arrivee_match = re.search(r"ARR\s*:\s*([\d\s\-]+)", text)
+    # 1. Extraction de l'Arrivée (ARR)
+    arrivee_match = re.search(r"ARR\s*:\s*([\d\s\-]+?)(?=\s*(?:NPO|NP)\s*:|$)", text)
     arrivee = (
-        [n.strip() for n in arrivee_match.group(1).split("-") if n.strip()]
+        [n.strip() for n in arrivee_match.group(1).split("-") if n.strip().isdigit()]
         if arrivee_match else []
     )
 
+    # 2. Extraction de NPO (Non-Partants d'Ordre) sous forme de chaîne formatée "16 - 15 - 1"
+    npo_match = re.search(r"NPO\s*:\s*([\d\s\-]+?)(?=\s*NP\s*:|$)", text)
+    if npo_match:
+        npo_digits = [n.strip() for n in npo_match.group(1).split("-") if n.strip().isdigit()]
+        non_partants_ordre = " - ".join(npo_digits) if npo_digits else "Aucun"
+    else:
+        non_partants_ordre = "Aucun"
+
+    # 3. Extraction classique de NP (Non-Partants simples)
     np_match = re.search(r"NP\s*:\s*(\d+)", text)
     non_partants = np_match.group(1) if np_match else "00"
 
+    # 4. Extraction des rapports de gains
     rapports = {}
     items = section.select("ul li")
     for item in items:
@@ -94,29 +103,21 @@ def parse_resultats_lonab(html_content: Optional[str] = None) -> Optional[dict]:
             if montant_clean:
                 rapports[libelle] = int(montant_clean)
 
-    print(f"DEBUG: titre_course={titre_course}, jour_semaine={jour_semaine}, date_brute={date_brute}, dt_obj={dt_obj}, arrivee={arrivee}, non_partants={non_partants}, rapports={rapports}")
-    # Assurez-vous que date_dt soit une chaîne ISO serializable en JSON
     date_iso = dt_obj.isoformat() if dt_obj else None
-    print(f"DEBUG: date_iso={date_iso}")  # DEBUG: Affiche la date au format ISO
+
+    print(f"DEBUG: titre_course={titre_course}, jour_semaine={jour_semaine}, date_brute={date_brute}, dt_obj={dt_obj}, arrivee={arrivee}, non_partants_ordre={non_partants_ordre}, non_partants={non_partants}, rapports={rapports}")
+    print(f"DEBUG: date_iso={date_iso}")
 
     return {
         "titre": titre_course,
         "jour": jour_semaine,
         "date_str": date_brute or datetime.now().strftime("%d-%m-%Y"),
-        "date_dt": date_iso,  # <-- FIX ICI: Chaîne ISO au lieu de l'objet datetime
+        "date_dt": date_iso,
         "arrivee": arrivee,
+        "non_partants_ordre": non_partants_ordre,  # Transmet "16 - 15 - 1" directement compatible avec le CharField Django
         "non_partants": non_partants,
         "rapports": rapports
     }
-    """ return {
-        "titre": titre_course,
-        "jour": jour_semaine,
-        "date_str": date_brute or datetime.now().strftime("%d-%m-%Y"),
-        "date_dt": dt_obj,
-        "arrivee": arrivee,
-        "non_partants": non_partants,
-        "rapports": rapports
-    } """
 
 
 def discover_result_pdfs(max_pages: int = 2) -> list[dict]:

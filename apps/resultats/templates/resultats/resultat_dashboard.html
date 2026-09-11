@@ -1,0 +1,796 @@
+{% extends "base.html" %}
+
+{% block title %}GestCom - Résultats des Courses{% endblock %}
+
+{% block header_title %}🏆 Résultats & Rapports des Courses{% endblock %}
+{% block header_subtitle %}Saisie, publication, consultation des arrivées et suivi des rapports de gains.{% endblock %}
+
+{% block content %}
+{{ pagination_initiale|json_script:"pagination-initiale-data" }}
+{{ resultats_initiaux|json_script:"resultats-initiaux-data" }}
+
+<div class="container mx-auto p-4 md:p-6 space-y-6">
+
+  <!-- BARRE DE FILTRES TEMPORELS ET RECHERCHE -->
+  <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-4">
+    
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- NAVIGATION CHRONOLOGIQUE RAPIDE -->
+      <div class="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs font-semibold">
+        <button type="button" 
+                onclick="filtrerParDateRapide('avant_hier')" 
+                id="btn-date-avant-hier"
+                class="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-white transition-all">
+          « Avant-Hier
+        </button>
+        <button type="button" 
+                onclick="filtrerParDateRapide('hier')" 
+                id="btn-date-hier"
+                class="px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-white transition-all">
+          Hier
+        </button>
+        <button type="button" 
+                onclick="filtrerParDateRapide('aujourdhui')" 
+                id="btn-date-aujourdhui"
+                class="px-3 py-1.5 rounded-md bg-emerald-600 text-white shadow-sm transition-all">
+          Aujourd'hui
+        </button>
+        <button type="button" 
+                onclick="filtrerParDateRapide('aujourdhui')" 
+                id="btn-date-tout"
+                class="px-3 py-1.5 rounded-md bg-emerald-600 text-white shadow-sm transition-all">
+          Tout
+        </button>
+      </div>
+
+      <!-- SÉLECTEUR DE DATE, RECHERCHE TEXTUELLE & STATUT -->
+      <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+        <div class="relative">
+          <input type="date" 
+                 id="filtre-date" 
+                 onchange="appliquerFiltreDateDirect();" 
+                 class="px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white font-medium text-slate-700">
+        </div>
+
+        <!-- Filtre Statut -->
+        <div>
+          <select id="filtre-statut" onchange="chargerResultats(1)" class="py-1.5 px-3 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white">
+            <option value="">Tous les statuts</option>
+            {% for val, label in statuts_resultat %}
+              <option value="{{ val }}" {% if request.GET.statut == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="relative min-w-[200px] flex-1">
+          <input type="text" 
+                 id="recherche-resultat" 
+                 value="{{ request.GET.q|default:'' }}"
+                 oninput="gererCroixRecherche(); chargerResultats(1);"
+                 placeholder="Rechercher course..." 
+                 class="px-3 py-1.5 pr-8 w-full text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          
+          <button type="button" 
+                  id="btn-vider-recherche" 
+                  onclick="effacerRecherche()" 
+                  class="{% if not request.GET.q %}hidden{% endif %} absolute right-2.5 top-1/2 -translate-y-1/2 text-rose-500 hover:text-rose-700 font-bold text-xs p-1 rounded-md hover:bg-rose-50 transition-colors">
+            ✕
+          </button>
+        </div>
+
+        <!-- Bouton Nouveau -->
+        <button type="button" 
+                onclick="ouvrirModalCreationResultat()" 
+                class="inline-flex items-center px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg shadow-sm transition shrink-0">
+          + Nouveau
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TABLEAU DE RÉSULTATS (UX/UI OPTIMISÉ) -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm text-left">
+        <thead class="bg-slate-900 text-slate-200 uppercase text-[11px] tracking-wider">
+          <tr>
+            <th class="px-4 py-3.5">Date & Course</th>
+            <th class="px-4 py-3.5">Arrivée & Non-Partants</th>
+            <th class="px-4 py-3.5 text-center">Statut</th>
+            <th class="px-4 py-3.5 text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="pave-resultats-body" class="divide-y divide-slate-100 [&>tr:nth-child(odd)]:bg-slate-50/40 [&>tr]:hover:bg-emerald-50/30 [&>tr]:transition-colors">
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PAGINATION -->
+    <div class="flex items-center justify-between p-4 bg-slate-50 border-t border-slate-200 text-xs text-slate-600">
+      <div class="flex items-center gap-2">
+        <span>Afficher</span>
+        <select id="taille-page" onchange="chargerResultats(1)" class="border border-slate-300 rounded-lg px-2 py-1 bg-white focus:ring-2 focus:ring-emerald-500">
+          <option value="7">7</option>
+          <option value="10" selected>10</option>
+          <option value="12">12</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+        </select>
+        <span id="info-pagination">— 0 résultat(s)</span>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="btn-precedent" onclick="pagePrecedente()" class="px-3 py-1.5 border border-slate-300 bg-white rounded-lg disabled:opacity-40 hover:bg-slate-50 transition" disabled>Précédent</button>
+        <span id="label-page" class="font-medium">Page 1</span>
+        <button id="btn-suivant" onclick="pageSuivante()" class="px-3 py-1.5 border border-slate-300 bg-white rounded-lg disabled:opacity-40 hover:bg-slate-50 transition" disabled>Suivant</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- 1. MODAL DE DÉTAILS ET DES RAPPORTS DE GAINS (CONSULTATION) -->
+<div id="modal-details-resultat" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 transform transition-all">
+    
+    <!-- En-tête -->
+    <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 px-6 py-4 text-white flex items-center justify-between">
+      <div>
+        <span id="detail-type-pari" class="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 mb-1">
+          Quarté
+        </span>
+        <h3 id="detail-titre-date" class="text-base font-bold text-white capitalize">
+          Jeudi 10 Septembre 2026
+        </h3>
+        <p id="detail-nom-course" class="text-xs text-slate-300">Course R1C4 - Prix des Sables</p>
+      </div>
+      <button type="button" onclick="basculerModal('modal-details-resultat', false)" class="text-slate-400 hover:text-white text-2xl leading-none">✕</button>
+    </div>
+
+    <div class="p-6 space-y-5">
+      
+      <!-- ARRIVÉE ET INFORMATIONS COMPLÉMENTAIRES -->
+      <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-center">
+        <span class="text-[11px] font-bold uppercase text-slate-400 tracking-wider block mb-1.5">Ordre d'arrivée officiel</span>
+        <div id="detail-ligne-arrivee" class="flex items-center justify-center gap-2 text-base font-black font-mono text-slate-900">
+          <!-- Injecté par JS : ARR : 3 - 9 - 13 - 2 -->
+        </div>
+
+        <!-- Injection des Non-Partants (NPO / NP) -->
+        <div id="detail-ligne-np" class="mt-2 text-xs font-medium text-slate-600 bg-white inline-block px-3 py-1 rounded-full border border-slate-200 shadow-xs">
+        <!-- Ex: NPO : 16 | NP : Aucun -->
+        </div>
+        
+        {% comment %} <div id="detail-ligne-np" class="mt-2 text-xs font-medium text-slate-500">
+          <!-- Injecté par JS : NPO : 16 | NP : Aucun -->
+        </div> {% endcomment %}
+        <div id="detail-extra-info" class="mt-1 text-[11px] text-slate-400 flex items-center justify-center gap-3">
+          <!-- Temps & Source -->
+        </div>
+      </div>
+
+      <!-- TABLEAU DES RAPPORTS ET GAINS -->
+      <div>
+        <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center justify-between">
+          <span>Rapports de Gains (FCFA)</span>
+          <span class="text-[10px] text-slate-400 font-normal">Mise de base 300 F</span>
+        </h4>
+        
+        <div class="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100 text-sm">
+          <div class="flex justify-between items-center p-2.5 bg-slate-50/60">
+            <span class="font-semibold text-slate-700">Ordre</span>
+            <span id="rapport-ordre" class="font-bold font-mono text-emerald-700">0 F</span>
+          </div>
+          <div class="flex justify-between items-center p-2.5">
+            <span class="font-semibold text-slate-700">Désordre</span>
+            <span id="rapport-desordre" class="font-bold font-mono text-slate-800">0 F</span>
+          </div>
+          <div class="flex justify-between items-center p-2.5 bg-slate-50/60">
+            <span class="font-semibold text-slate-700">Couplé Gagnant</span>
+            <span id="rapport-cgagnant" class="font-mono text-slate-800">0 F</span>
+          </div>
+          <div class="flex justify-between items-center p-2.5">
+            <span class="font-semibold text-slate-700">Couplé Placé A</span>
+            <span id="rapport-cplace-a" class="font-mono text-slate-800">0 F</span>
+          </div>
+          <div class="flex justify-between items-center p-2.5 bg-slate-50/60">
+            <span class="font-semibold text-slate-700">Couplé Placé B</span>
+            <span id="rapport-cplace-b" class="font-mono text-slate-800">0 F</span>
+          </div>
+          <div class="flex justify-between items-center p-2.5">
+            <span class="font-semibold text-slate-700">Couplé Placé C</span>
+            <span id="rapport-cplace-c" class="font-mono text-slate-800">0 F</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMMENTAIRE -->
+      <div id="detail-bloc-commentaire" class="hidden bg-amber-50/50 border border-amber-200/60 rounded-xl p-3 text-xs text-amber-900">
+        <span class="font-bold block mb-0.5">Remarque / Commentaire :</span>
+        <p id="detail-commentaire-texte" class="italic text-amber-800"></p>
+      </div>
+
+    </div>
+
+    <div class="px-6 py-3 bg-slate-50 border-t border-slate-100 flex justify-end">
+      <button type="button" onclick="basculerModal('modal-details-resultat', false)" class="px-4 py-2 bg-slate-800 text-white rounded-lg text-xs font-semibold hover:bg-slate-900 transition">
+        Fermer
+      </button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- 2. MODAL FORMULAIRE DE SAISIE / ÉDITION (INTÉGRALE ET COMPLÈTE) -->
+ <div id="modal-resultat-form" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 transform transition-all">
+    
+    <!-- EN-TÊTE DU MODAL -->
+    <div class="flex items-center justify-between px-6 py-4 bg-slate-900 text-white">
+      <h2 class="text-base font-bold text-slate-100 flex items-center gap-2" id="titre-modal-resultat">
+        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+        </svg>
+        <span>Résultat de Course</span>
+      </h2>
+      <button type="button" onclick="basculerModal('modal-resultat-form', false)" class="text-slate-400 hover:text-white text-xl leading-none transition">
+        ✕
+      </button>
+    </div>
+
+    <form id="form-resultat" onsubmit="soumettreFormulaireResultat(event)" class="p-6 space-y-4">
+      {% csrf_token %}
+      <input type="hidden" id="resultat-id" name="id" value="">
+
+      <!-- LIGNE 1 : STATUT -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Statut *</label>
+        <select id="field-statut" name="statut" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 border-slate-300">
+          {% for val, label in statuts_resultat %}
+            <option value="{{ val }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- LIGNE 2 : NON-PARTANTS D'ORDRE (NPO) & NON-PARTANTS (NP) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Non-partants dans l'ordre (NPO)</label>
+          <input type="text" id="field-non-partants-ordre" name="non_partants_ordre" placeholder="ex: 16" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 border-slate-300">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Non-partants (NP)</label>
+          <input type="text" id="field-non-partants" name="non_partants" placeholder="ex: 00 ou 02, 05" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 border-slate-300">
+        </div>
+      </div>
+
+      <!-- LIGNE 3 : TEMPS & SOURCE -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Temps de course</label>
+          <input type="text" id="field-temps-course" name="temps_course" placeholder="ex: 1'15''4" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 border-slate-300">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Source</label>
+          <input type="text" id="field-source" name="source" value="Scraper LONAB" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 border-slate-300">
+        </div>
+      </div>
+
+      <!-- LIGNE 4 : ARRIVÉE -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Arrivée (Séparée par des virgules ou tirets)</label>
+        <input type="text" id="field-arrivee-brute" name="arrivee_brute" placeholder="ex: 3, 9, 13, 2" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 border-slate-300 font-mono">
+        <p class="text-[11px] text-slate-400 mt-0.5">Saisissez les numéros de chevaux dans l'ordre d'arrivée.</p>
+      </div>
+
+      <!-- LIGNE 5 : COMMENTAIRE -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Commentaire</label>
+        <textarea id="field-commentaire" name="commentaire" rows="2" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 border-slate-300"></textarea>
+      </div>
+
+      <!-- PIED DU MODAL -->
+      <div class="flex justify-end space-x-3 pt-4 border-t border-slate-100">
+        <button type="button" onclick="basculerModal('modal-resultat-form', false)" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 text-sm font-medium transition">Annuler</button>
+        <button type="submit" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium transition">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+<script>
+// OBVENTION TOKEN CSRF
+function getCSRFToken() {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, 10) === ('csrftoken=')) {
+        cookieValue = decodeURIComponent(cookie.substring(10));
+        break;
+      }
+    }
+  }
+  if (cookieValue) return cookieValue;
+  const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+  return csrfInput ? csrfInput.value : '';
+}
+
+let pageCourante = 1;
+let totalPages = 1;
+let dateFiltreActive = '';
+
+// FORMATTEURS
+function formatFCFA(montant) {
+  if (montant === undefined || montant === null || montant === '') return '0 F';
+  const val = parseInt(montant, 10);
+  if (isNaN(val)) return montant + ' F';
+  return val.toLocaleString('fr-FR') + ' F';
+}
+
+function formaterDateFr(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+// FILTRES DE DATES RAPIDES
+function filtrerParDateRapide(type) {
+  const d = new Date();
+  if (type === 'hier') {
+    d.setDate(d.getDate() - 1);
+  } else if (type === 'avant_hier') {
+    d.setDate(d.getDate() - 2);
+  }
+
+  const isoDate = d.toISOString().split('T')[0];
+  document.getElementById('filtre-date').value = isoDate;
+  
+  /*['avant-hier', 'hier', 'aujourdhui'].forEach(k => {
+    const btn = document.getElementById(`btn-date-${k}`);
+    if (k === type || (type === 'aujourdhui' && k === 'aujourdhui')) {
+      btn.className = "px-3 py-1.5 rounded-md bg-emerald-600 text-white shadow-sm transition-all";
+    } else {
+      btn.className = "px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-white transition-all";
+    }
+  });*/
+
+   ['avant-hier', 'hier', 'aujourdhui', 'tout'].forEach(k => {
+    const btn = document.getElementById(`btn-date-${k}`);
+    if (k === type || (type === 'tout' && k === 'tout')) {
+      btn.className = "px-3 py-1.5 rounded-md bg-emerald-600 text-white shadow-sm transition-all";
+    } else {
+      btn.className = "px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-white transition-all";
+    }
+  });
+
+  dateFiltreActive = isoDate;
+  chargerResultats(1);
+}
+
+{% comment %} function appliquerFiltreDateDirect() {
+  dateFiltreActive = document.getElementById('filtre-date').value;
+  ['avant-hier', 'hier', 'aujourdhui'].forEach(k => {
+    document.getElementById(`btn-date-${k}`).className = "px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-white transition-all";
+  });
+  chargerResultats(1);
+} {% endcomment %}
+
+ function appliquerFiltreDateDirect() {
+  dateFiltreActive = document.getElementById('filtre-date').value;
+  ['avant-hier', 'hier', 'aujourdhui', 'tout'].forEach(k => {
+    document.getElementById(`btn-date-${k}`).className = "px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-white transition-all";
+  });
+  chargerResultats(1);
+}
+
+
+function extraireListeChevaux(arrivee) {
+  if (Array.isArray(arrivee)) {
+    return arrivee.map(item => (typeof item === 'object' && item !== null) ? (item.cheval || item.numero || item.nom) : item);
+  }
+  if (typeof arrivee === 'string') {
+    return arrivee.replace(/,/g, ' - ').split('-').map(s => s.trim()).filter(Boolean);
+  }
+  return [];
+}
+
+// Fonction intermédiaire ouvrant la modal via l'index du cache
+function ouvrirModalDetailsByIndex(index) {
+  const data = window.RESULTATS_CACHE[index];
+  if (data) ouvrirModalDetails(data);
+}
+
+// OUVERTURE DÉTAILS
+function ouvrirModalDetails(data) {
+  document.getElementById('detail-type-pari').textContent = data.type_pari || 'Quarté';
+  document.getElementById('detail-titre-date').textContent = formaterDateFr(data.date_course || new Date());
+  document.getElementById('detail-nom-course').textContent = data.course_nom || data.course || 'Course hippique';
+
+  // 1. Mise en page visuelle de l'arrivée sous forme de puces/badges
+  const listeChevaux = extraireListeChevaux(data.arrivee);
+  const conteneurArrivee = document.getElementById('detail-ligne-arrivee');
+  
+  if (listeChevaux.length > 0) {
+    conteneurArrivee.innerHTML = `
+      <span class="text-xs font-bold text-emerald-600 mr-1">ARR :</span>
+      <div class="flex flex-wrap items-center justify-center gap-1.5">
+        ${listeChevaux.map(num => `
+          <span class="inline-flex items-center justify-center w-7 h-7 bg-slate-900 text-emerald-400 font-mono font-bold text-sm rounded-md shadow-xs border border-slate-700">
+            ${num}
+          </span>
+        `).join('')}
+      </div>
+    `;
+  } else {
+    conteneurArrivee.innerHTML = `<span class="text-slate-400 font-normal text-sm">Aucune arrivée enregistrée</span>`;
+  }
+
+  // 2. Traitement cohérent des Non-Partants et Non-Partants d'Ordre (NPO)
+  const np = data.non_partants || '00';
+  const npo = data.non_partants_ordre || 'Aucun';
+  
+  document.getElementById('detail-ligne-np').innerHTML = `
+    <span>NPO : <strong class="text-slate-800">${npo}</strong></span>
+    <span class="mx-2 text-slate-300">|</span>
+    <span>NP : <strong class="text-slate-800">${np}</strong></span>
+  `;
+
+  document.getElementById('detail-extra-info').innerHTML = `
+    <span>Temps: <strong class="text-slate-700">${data.temps_course || 'N/A'}</strong></span>
+    <span>•</span>
+    <span>Source: <strong class="text-slate-700">${data.source || 'Scraper LONAB'}</strong></span>
+  `;
+
+  const r = data.rapports || {};
+  document.getElementById('rapport-ordre').textContent = formatFCFA(r.ordre || 238500);
+  document.getElementById('rapport-desordre').textContent = formatFCFA(r.desordre || 14500);
+  document.getElementById('rapport-cgagnant').textContent = formatFCFA(r.c_gagnant || 8500);
+  document.getElementById('rapport-cplace-a').textContent = formatFCFA(r.c_place_a || 2500);
+  document.getElementById('rapport-cplace-b').textContent = formatFCFA(r.c_place_b || 6500);
+  document.getElementById('rapport-cplace-c').textContent = formatFCFA(r.c_place_c || 4000);
+
+  const blocComm = document.getElementById('detail-bloc-commentaire');
+  if (data.commentaire && data.commentaire.trim() !== '') {
+    document.getElementById('detail-commentaire-texte').textContent = data.commentaire;
+    blocComm.classList.remove('hidden');
+  } else {
+    blocComm.classList.add('hidden');
+  }
+
+  basculerModal('modal-details-resultat', true);
+}
+
+// MODAL FORMULAIRE : OUVERTURE / CRÉATION
+function ouvrirModalCreationResultat() {
+  const form = document.getElementById('form-resultat');
+  if (form) form.reset();
+  document.getElementById('resultat-id').value = '';
+  
+  document.getElementById('titre-modal-resultat').innerHTML = `
+    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+    </svg>
+    <span>Nouveau Résultat de Course</span>
+  `;
+  
+  basculerModal('modal-resultat-form', true);
+}
+
+window.RESULTATS_CACHE = [];
+
+function obtenirDateAffichage(res) {
+
+  if (res.date_str) return res.date_str;
+  if (res.jour && res.date_dt) {
+    const d = new Date(res.date_dt);
+    if (!isNaN(d.getTime())) {
+      return `${res.jour} ${d.getDate()} ${d.toLocaleString('fr-FR', { month: 'long' })} ${d.getFullYear()}`;
+    }
+  }
+  if (res.date_dt) return formaterDateFr(res.date_dt);
+  if (res.date_course) return formaterDateFr(res.date_course);
+  return 'Aujourd\'hui';
+}
+
+function afficherTableauResultats(liste) {
+
+  window.RESULTATS_CACHE = liste;
+  /*const tbody = document.getElementById('tbody-resultats');
+  if (!tbody) return;*/
+
+  const tbody = document.getElementById("pave-resultats-body");
+  if (!tbody) return;
+
+
+  tbody.innerHTML = liste.map((res, index) => {
+    //console.log("afficherTableauResultats | GET DATA" + res)
+
+    const listeChevaux = extraireListeChevaux(res.arrivee);
+    const arriveeTexte = listeChevaux.length > 0 ? listeChevaux.join(' - ') : '-';
+    
+    const npVal = res.non_partants || '00';
+    const npoVal = res.non_partants_ordre || 'Aucun';
+
+    // Priorité à la date exacte de la course (ex: 10 Septembre 2026)
+    const dateAffichage = obtenirDateAffichage(res);
+
+    let badgeClass = "bg-amber-100 text-amber-800 border-amber-200";
+    if (res.statut === 'OFFICIEL') badgeClass = "bg-emerald-100 text-emerald-800 border-emerald-200";
+    else if (res.statut === 'ANNULE') badgeClass = "bg-rose-100 text-rose-800 border-rose-200";
+
+    return `
+      <tr class="align-middle border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+        <td class="px-4 py-3">
+          <div class="flex flex-col">
+            <span class="font-bold text-slate-900">${res.course_nom || res.course || 'Course'}</span>
+            <span class="text-xs text-slate-500">${dateAffichage}</span>
+          </div>
+        </td>
+        
+        <td class="px-4 py-3">
+          <div class="inline-flex flex-wrap items-center gap-2 bg-slate-900 text-white font-mono px-3 py-1.5 rounded-lg shadow-xs text-xs">
+            <span class="text-emerald-400 font-bold">ARR :</span>
+            <span class="tracking-wider font-bold text-slate-100">${arriveeTexte}</span>
+            <span class="text-slate-600">|</span>
+            <span class="text-sky-400 font-bold">NPO :</span>
+            <span class="text-slate-200">${npoVal}</span>
+            <span class="text-slate-600">|</span>
+            <span class="text-amber-400 font-bold">NP :</span>
+            <span class="text-slate-200">${npVal}</span>
+          </div>
+        </td>
+
+        <td class="px-4 py-3 text-center">
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${badgeClass}">
+            ${res.statut_label || res.statut}
+          </span>
+        </td>
+
+        <td class="px-4 py-3 text-center">
+          <div class="inline-flex items-center gap-1.5">
+            <button type="button" 
+                    onclick="ouvrirModalDetailsByIndex(${index})"
+                    class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition active:scale-95"
+                    title="Voir les détails et rapports de gains">
+              <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              Détails
+            </button>
+
+            <button type="button" 
+                    onclick="editerResultatByIndex(${index})"
+                    class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition active:scale-95"
+                    title="Modifier la saisie">
+              <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.03H3v-3.572L16.732 3.732z"/></svg>
+              Modifier
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+/**
+ * Fonction de remplissage du formulaire d'édition
+ */
+function editerResultatByIndex(index) {
+  const data = window.RESULTATS_CACHE[index];
+  if (!data) return;
+
+  // 1. Identifiant
+  const elId = document.getElementById('resultat-id');
+  if (elId) elId.value = data.id || '';
+
+  // 2. Statut
+  const elStatut = document.getElementById('field-statut');
+  if (elStatut) elStatut.value = data.statut || 'OFFICIEL';
+
+  // 3. Non-Partants dans l'ordre (NPO) et Non-Partants (NP)
+  const elNPO = document.getElementById('field-non-partants-ordre');
+  if (elNPO) elNPO.value = data.non_partants_ordre || '';
+
+  const elNP = document.getElementById('field-non-partants');
+  if (elNP) elNP.value = data.non_partants || '';
+
+  // 4. Temps de course & Source
+  const elTemps = document.getElementById('field-temps-course');
+  if (elTemps) elTemps.value = data.temps_course || '';
+
+  const elSource = document.getElementById('field-source');
+  if (elSource) elSource.value = data.source || 'Scraper LONAB';
+
+  // 5. Arrivée brute
+  const elArrivee = document.getElementById('field-arrivee-brute');
+  if (elArrivee) {
+    const listeChevaux = extraireListeChevaux(data.arrivee);
+    elArrivee.value = listeChevaux.join(', ');
+  }
+
+  // 6. Commentaire
+  const elComm = document.getElementById('field-commentaire');
+  if (elComm) elComm.value = data.commentaire || '';
+
+  // 7. Ouverture du Modal
+  basculerModal('modal-resultat-form', true);
+}
+
+// SOUMISSION AJAX DU FORMULAIRE
+async function soumettreFormulaireResultat(event) {
+  event.preventDefault();
+  const form = event.target;
+  const formData = new FormData(form);
+
+  let targetUrl = "{% url 'resultats:resultat_dashboard' %}";
+
+  if (typeof gestComAlerts !== 'undefined') {
+    gestComAlerts.chargement("Enregistrement en cours...");
+  }
+
+  try {
+    const response = await fetch(targetUrl, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': getCSRFToken(),
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: formData
+    });
+
+    const donnees = await response.json();
+
+    if (typeof gestComAlerts !== 'undefined') {
+      gestComAlerts.fermerChargement();
+    }
+
+    if (!response.ok) {
+      const msg = donnees.erreur || "Erreur lors de la sauvegarde.";
+      if (typeof gestComAlerts !== 'undefined') gestComAlerts.erreur(msg);
+      else alert(msg);
+      return;
+    }
+
+    basculerModal('modal-resultat-form', false);
+
+    if (typeof gestComAlerts !== 'undefined') {
+      await gestComAlerts.toast(donnees.message || "Résultat enregistré avec succès !", "success");
+    }
+
+    chargerResultats(pageCourante);
+
+  } catch (err) {
+    console.error("Erreur de soumission :", err);
+    if (typeof gestComAlerts !== 'undefined') {
+      gestComAlerts.fermerChargement();
+      gestComAlerts.erreur("Impossible de contacter le serveur.");
+    }
+  }
+}
+
+// UTILS RECHERCHE & URL
+function gererCroixRecherche() {
+  const input = document.getElementById("recherche-resultat");
+  const btnVider = document.getElementById("btn-vider-recherche");
+  
+  if (!input || !btnVider) return;
+
+  if (input.value.trim() !== "") {
+    btnVider.classList.remove("hidden");
+  } else {
+    btnVider.classList.add("hidden");
+  }
+}
+
+function effacerRecherche() {
+  const input = document.getElementById("recherche-resultat");
+  const btnVider = document.getElementById("btn-vider-recherche");
+  
+  if (!input) return;
+
+  input.value = "";
+  if (btnVider) btnVider.classList.add("hidden");
+  
+  mettreAJourUrlRecherche("");
+  chargerResultats(1);
+}
+
+function mettreAJourUrlRecherche(qValue) {
+  const url = new URL(window.location.href);
+  if (qValue && qValue.trim() !== "") {
+    url.searchParams.set("q", qValue.trim());
+  } else {
+    url.searchParams.delete("q");
+  }
+  window.history.replaceState({}, "", url.toString());
+}
+
+function basculerModal(idModal, afficher) {
+  const el = document.getElementById(idModal);
+  if (el) el.classList.toggle('hidden', !afficher);
+}
+
+// API CHARGEMENT & PAGINATION
+async function chargerResultats(page = 1) {
+  const q = document.getElementById("recherche-resultat").value;
+  const statut = document.getElementById("filtre-statut").value;
+  const size = document.getElementById("taille-page").value;
+
+  mettreAJourUrlRecherche(q);
+
+  const params = new URLSearchParams({ page, page_size: size, q, statut, date: dateFiltreActive });
+
+  try {
+    const res = await fetch(`{% url 'resultats:api_lister_resultats' %}?${params.toString()}`);
+    const data = await res.json();
+
+    if (data.status === "success") {
+      afficherTableauResultats(data.objects);
+      mettreAJourPagination(data.pagination);
+    }
+  } catch (err) {
+    console.error("Erreur de chargement :", err);
+  }
+}
+
+function mettreAJourPagination(p) {
+  if (!p) return;
+  pageCourante = p.page_courante;
+  totalPages = p.total_pages;
+
+  document.getElementById("info-pagination").textContent = `— ${p.total_elements} résultat(s)`;
+  document.getElementById("label-page").textContent = `Page ${p.page_courante} sur ${p.total_pages || 1}`;
+
+  document.getElementById("btn-precedent").disabled = !p.a_precedent;
+  document.getElementById("btn-suivant").disabled = !p.a_suivant;
+}
+
+function pagePrecedente() {
+  if (pageCourante > 1) chargerResultats(pageCourante - 1);
+}
+
+function pageSuivante() {
+  if (pageCourante < totalPages) chargerResultats(pageCourante + 1);
+}
+
+// DOM INITIALISATION
+document.addEventListener("DOMContentLoaded", () => {
+  gererCroixRecherche();
+
+  const initDataEl = document.getElementById("resultats-initiaux-data");
+  const initPagingEl = document.getElementById("pagination-initiale-data");
+
+  if (initDataEl && initPagingEl) {
+    const objetsInitiaux = JSON.parse(initDataEl.textContent);
+    const paginationInitiale = JSON.parse(initPagingEl.textContent);
+
+    // Si des données initiales existent, on extrait la date du 1er élément
+    if (objetsInitiaux && objetsInitiaux.length > 0) {
+      const datePremiereCourse = objetsInitiaux[0].date_course || objetsInitiaux[0].date_dt;
+      if (datePremiereCourse) {
+        const isoDate = datePremiereCourse.split('T')[0];
+        document.getElementById('filtre-date').value = isoDate;
+        dateFiltreActive = isoDate;
+      }
+    }
+
+
+    afficherTableauResultats(objetsInitiaux);
+    mettreAJourPagination(paginationInitiale);
+  } else {
+    // Si aucune donnée initiale, on se positionne sur aujourd'hui par défaut
+    const aujourdhuiStr = new Date().toISOString().split('T')[0];
+    document.getElementById('filtre-date').value = aujourdhuiStr;
+    dateFiltreActive = aujourdhuiStr;
+    chargerResultats(1);
+  }
+});
+
+</script>
+{% endblock %}

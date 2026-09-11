@@ -1,0 +1,474 @@
+{% extends "base.html" %}
+
+{% block title %}GestCom - Points de Vente & Agences{% endblock %}
+
+{% block header_title %}📍Points de Vente & Agences {% endblock %}
+{% block header_subtitle %}Gestion, localisation et suivi des agences et points de vente.{% endblock %}
+
+{% block content %}
+{{ pagination_initiale|json_script:"pagination-initiale-data" }}
+{{ resultats_initiaux|json_script:"resultats-initiaux-data" }}
+
+<div class="container mx-auto p-6 space-y-6">
+
+  <!-- Barre de Filtres et d'Actions -->
+  <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+      <div class="relative min-w-[240px]">
+        <input type="text" 
+              id="recherche-pv" 
+              oninput="gererCroixRecherche(); chargerPointsVente(1);"
+              placeholder="Rechercher par code, nom..." 
+              class="px-3 py-2 pr-8 w-full text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+        
+        <!-- Bouton croix (masqué par défaut avec la classe 'hidden') -->
+        <button type="button" 
+                id="btn-vider-recherche" 
+                onclick="effacerRecherche()" 
+                class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-rose-500 hover:text-rose-700 font-bold text-xs p-1 rounded-md hover:bg-rose-50 transition-colors"
+                title="Vider la recherche">
+          ✕
+        </button>
+      </div>
+      
+      <div>
+        <select id="filtre-type" onchange="chargerPointsVente(1)" class="py-2 px-3 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+          <option value="">Tous les types</option>
+          {% for val, label in types_point_vente %}
+            <option value="{{ val }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <select id="filtre-statut" onchange="chargerPointsVente(1)" class="py-2 px-3 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+          <option value="">Tous les statuts</option>
+          <option value="actif">Actif</option>
+          <option value="inactif">Inactif</option>
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <button type="button" 
+              onclick="ouvrirModalCreationPV()" 
+              class="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg shadow-sm transition">
+        + Nouveau Point de Vente
+      </button>
+    </div>
+  </div>
+
+  <!-- TABLEAU -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-900 text-slate-200 uppercase text-xs tracking-wider">
+          <tr>
+            <th class="px-4 py-3 text-left">Code & Nom</th>
+            <th class="px-4 py-3 text-left">Type</th>
+            <th class="px-4 py-3 text-left">Ville / Localisation</th>
+            <th class="px-4 py-3 text-left">Téléphone</th>
+            <th class="px-4 py-3 text-left">Statut</th>
+            <th class="px-4 py-3 text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="pave-pv-body" class="divide-y divide-slate-200 [&>tr:nth-child(odd)]:bg-slate-50/50 [&>tr]:hover:bg-emerald-50/40 [&>tr]:transition-colors [&>tr>td]:px-4 [&>tr>td]:py-3">
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PAGINATION -->
+    <div class="flex items-center justify-between p-4 bg-slate-50 border-t border-slate-200 text-sm text-gray-600">
+      <div class="flex items-center gap-2">
+        <span>Afficher</span>
+        <select id="taille-page" onchange="chargerPointsVente(1)" class="border border-slate-300 rounded-lg px-2 py-1 bg-white">
+          <option value="7" selected>7</option>
+          <option value="10">10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+        </select>
+        <span id="info-pagination">— 0 résultat(s)</span>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="btn-precedent" onclick="pagePrecedente()" class="px-3 py-1.5 border border-slate-300 bg-white rounded-lg disabled:opacity-40" disabled>Précédent</button>
+        <span id="label-page">Page 1</span>
+        <button id="btn-suivant" onclick="pageSuivante()" class="px-3 py-1.5 border border-slate-300 bg-white rounded-lg disabled:opacity-40" disabled>Suivant</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FORMULAIRE -->
+<div id="modal-pv-form" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 transform transition-all">
+    
+    <!-- EN-TÊTE DU MODAL HARMONISÉ -->
+  <div class="flex items-center justify-between px-6 py-4 bg-slate-900 text-white">
+    <h2 class="text-base font-bold text-slate-100 flex items-center gap-2" id="titre-modal-pv">
+      <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+      </svg>
+      <span>Point de Vente</span>
+    </h2>
+    <button type="button" onclick="basculerModal('modal-pv-form', false)" class="text-slate-400 hover:text-white text-xl leading-none transition">
+      ✕
+    </button>
+  </div>
+
+
+    <form id="form-point-vente" onsubmit="soumettreFormulairePV(event)" class="p-6 space-y-4">
+      {% csrf_token %}
+      <input type="hidden" id="pv-id" name="id" value="">
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Code *</label>
+          <input type="text" id="field-code" name="code" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 border-slate-300">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Nom *</label>
+          <input type="text" id="field-nom" name="nom" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 border-slate-300">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Type *</label>
+          <select id="field-type" name="type" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 border-slate-300">
+            {% for code_val, label in types_point_vente %}
+              <option value="{{ code_val }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Ville *</label>
+          <input type="text" id="field-ville" name="ville" value="Ouagadougou" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 border-slate-300">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Quartier</label>
+          <input type="text" id="field-quartier" name="quartier" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 border-slate-300">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Adresse</label>
+          <input type="text" id="field-adresse" name="adresse" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 border-slate-300">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Téléphone</label>
+          <input type="text" id="field-telephone" name="telephone" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 border-slate-300">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Email</label>
+          <input type="email" id="field-email" name="email" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 border-slate-300">
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-6 py-2">
+        <label class="flex items-center space-x-2 text-sm cursor-pointer">
+          <input type="checkbox" id="field-est-actif" name="est_actif" checked class="rounded text-emerald-600 focus:ring-emerald-500">
+          <span class="text-slate-700 font-medium">Actif</span>
+        </label>
+        <label class="flex items-center space-x-2 text-sm cursor-pointer">
+          <input type="checkbox" id="field-est-principal" name="est_principal" class="rounded text-emerald-600 focus:ring-emerald-500">
+          <span class="text-slate-700 font-medium">Agence principale</span>
+        </label>
+      </div>
+
+      <div class="flex justify-end space-x-3 pt-4 border-t border-slate-100">
+        <button type="button" onclick="basculerModal('modal-pv-form', false)" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 text-sm font-medium">Annuler</button>
+        <button type="submit" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium transition">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+<script>
+
+// Fonction de récupération du token CSRF
+function getCSRFToken() {
+  // 1. Recherche dans les cookies (méthode standard Django)
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, 10) === ('csrftoken=')) {
+        cookieValue = decodeURIComponent(cookie.substring(10));
+        break;
+      }
+    }
+  }
+  if (cookieValue) return cookieValue;
+
+  // 2. Repli sur un input hidden [name=csrfmiddlewaretoken] s'il existe
+  const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+  return csrfInput ? csrfInput.value : '';
+}
+
+let pageCourante = 1;
+let totalPages = 1;
+
+function basculerModal(idModal, afficher) {
+  const el = document.getElementById(idModal);
+  if (!el) return;
+  if (afficher) el.classList.remove('hidden');
+  else el.classList.add('hidden');
+}
+
+
+function ouvrirModalCreationPV() {
+  const form = document.getElementById('form-point-vente');
+  if (form) form.reset();
+  document.getElementById('pv-id').value = '';
+  
+  // Conservation du style harmonisé avec icône
+  document.getElementById('titre-modal-pv').innerHTML = `
+    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+    </svg>
+    <span>Nouveau Point de Vente</span>
+  `;
+  
+  document.getElementById('field-est-actif').checked = true;
+  basculerModal('modal-pv-form', true);
+}
+
+function editerPointVente(pvData) {
+  document.getElementById('pv-id').value = pvData.id || '';
+  
+  document.getElementById('titre-modal-pv').innerHTML = `
+    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+    </svg>
+    <span>Modifier le Point de Vente</span>
+  `;
+
+  document.getElementById('field-code').value = pvData.code || '';
+  document.getElementById('field-nom').value = pvData.nom || '';
+  document.getElementById('field-type').value = pvData.type || 'POINT_VENTE';
+  document.getElementById('field-ville').value = pvData.ville || '';
+  document.getElementById('field-quartier').value = pvData.quartier || '';
+  document.getElementById('field-adresse').value = pvData.adresse || '';
+  document.getElementById('field-telephone').value = pvData.telephone || '';
+  document.getElementById('field-email').value = pvData.email || '';
+  document.getElementById('field-est-actif').checked = Boolean(pvData.est_actif);
+  document.getElementById('field-est-principal').checked = Boolean(pvData.est_principal);
+
+  basculerModal('modal-pv-form', true);
+}
+
+async function soumettreFormulairePV(event) {
+  event.preventDefault();
+  const form = event.target;
+  const formData = new FormData(form);
+  const pvId = document.getElementById('pv-id')?.value;
+
+  // Modèle d'URL généré par Django (remplace /0/ par /id/)
+  const urlCreation = "{% url 'points_vente:creer_point_vente' %}";
+  const urlModificationTemplate = "{% url 'points_vente:modifier_point_vente' 0 %}"; 
+
+  let targetUrl = urlCreation;
+  if (pvId) {
+    targetUrl = urlModificationTemplate.replace('/0/', `/${pvId}/`);
+  }
+
+  if (typeof gestComAlerts !== 'undefined') {
+    gestComAlerts.chargement("Enregistrement en cours...");
+  }
+
+  try {
+    const response = await fetch(targetUrl, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': getCSRFToken(),
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: formData
+    });
+
+    const donnees = await response.json();
+
+    if (typeof gestComAlerts !== 'undefined') {
+      gestComAlerts.fermerChargement();
+    }
+
+    if (!response.ok) {
+      const msg = donnees.erreur || "Erreur lors de la sauvegarde.";
+      if (typeof gestComAlerts !== 'undefined') gestComAlerts.erreur(msg);
+      else alert(msg);
+      return;
+    }
+
+    basculerModal('modal-pv-form', false);
+
+    if (typeof gestComAlerts !== 'undefined') {
+      await gestComAlerts.toast(donnees.message || "Opération réussie !", "success");
+    }
+
+    // Rechargement des données sur la page courante
+    chargerPointsVente(pageCourante);
+
+  } catch (err) {
+    console.error("Erreur de soumission :", err);
+    if (typeof gestComAlerts !== 'undefined') {
+      gestComAlerts.fermerChargement();
+      gestComAlerts.erreur("Impossible de contacter le serveur.");
+    }
+  }
+}
+
+function afficherTableauPV(liste) {
+  const tbody = document.getElementById("pave-pv-body");
+  if (!tbody) return;
+
+  if (!liste || liste.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="text-center text-slate-400 py-10">
+          Aucun point de vente disponible.
+        </td>
+      </tr>`;
+    return;
+  }
+
+  tbody.innerHTML = liste.map(pv => {
+    let badgeTypeClass = "bg-slate-100 text-slate-800";
+    if (pv.type === 'AGENCE') badgeTypeClass = "bg-blue-100 text-blue-800";
+    else if (pv.type === 'POINT_VENTE') badgeTypeClass = "bg-purple-100 text-purple-800";
+    else if (pv.type === 'PMU_CLUB') badgeTypeClass = "bg-amber-100 text-amber-800";
+
+    const badgeStatut = pv.est_actif 
+      ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Actif</span>`
+      : `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">Inactif</span>`;
+
+    const labelPrincipal = pv.est_principal ? `<span class="text-xs text-emerald-600 font-semibold">(Principal)</span>` : '';
+    const pvJsonStr = JSON.stringify(pv).replace(/'/g, "&apos;");
+
+    return `
+      <tr>
+        <td>
+          <div class="flex flex-col">
+            <span class="font-medium text-slate-900 truncate block">${pv.nom} ${labelPrincipal}</span>
+            <span class="text-xs text-slate-400 font-mono truncate block">Code: ${pv.code}</span>
+          </div>
+        </td>
+        <td>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badgeTypeClass}">
+            ${pv.type_label}
+          </span>
+        </td>
+        <td class="text-slate-600">
+          <div class="font-medium">${pv.ville}</div>
+          <div class="text-xs text-slate-400">${pv.quartier || pv.adresse || '-'}</div>
+        </td>
+        <td class="text-slate-600 font-mono text-xs">${pv.telephone || '-'}</td>
+        <td>${badgeStatut}</td>
+        <td class="text-center">
+          <button type="button" 
+                  onclick='editerPointVente(${pvJsonStr})'
+                  class="px-2 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded transition">
+            Modifier
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// BOUTON CROIX ROUGE SUR LA RECHERCHE
+// Affiche ou masque la croix selon qu'il y ait du texte ou non
+function gererCroixRecherche() {
+  const input = document.getElementById("recherche-pv");
+  const btnVider = document.getElementById("btn-vider-recherche");
+  
+  if (!input || !btnVider) return;
+
+  if (input.value.trim() !== "") {
+    btnVider.classList.remove("hidden");
+  } else {
+    btnVider.classList.add("hidden");
+  }
+}
+
+// Reinitialise le champ, masque la croix et relance la recherche sur la page 1
+function effacerRecherche() {
+  const input = document.getElementById("recherche-pv");
+  const btnVider = document.getElementById("btn-vider-recherche");
+  
+  if (!input) return;
+
+  input.value = "";
+  if (btnVider) btnVider.classList.add("hidden");
+  
+  // Relance le filtrage
+  chargerPointsVente(1);
+}
+
+function mettreAJourPagination(p) {
+  if (!p) return;
+  pageCourante = p.page_courante;
+  totalPages = p.total_pages;
+
+  document.getElementById("info-pagination").textContent = `— ${p.total_elements} résultat(s)`;
+  document.getElementById("label-page").textContent = `Page ${p.page_courante} sur ${p.total_pages || 1}`;
+
+  document.getElementById("btn-precedent").disabled = !p.a_precedent;
+  document.getElementById("btn-suivant").disabled = !p.a_suivant;
+}
+
+async function chargerPointsVente(page = 1) {
+  const q = document.getElementById("recherche-pv").value;
+  const type = document.getElementById("filtre-type").value;
+  const statut = document.getElementById("filtre-statut").value;
+  const size = document.getElementById("taille-page").value;
+
+  const params = new URLSearchParams({ page, page_size: size, q, type, statut });
+
+  try {
+    const res = await fetch(`{% url 'points_vente:api_lister_point_vente' %}?${params.toString()}`);
+    const data = await res.json();
+
+    if (data.status === "success") {
+      afficherTableauPV(data.objects);
+      mettreAJourPagination(data.pagination);
+    }
+  } catch (err) {
+    console.error("Erreur de chargement :", err);
+  }
+}
+
+function pagePrecedente() {
+  if (pageCourante > 1) chargerPointsVente(pageCourante - 1);
+}
+
+function pageSuivante() {
+  if (pageCourante < totalPages) chargerPointsVente(pageCourante + 1);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  // 1. Synchronise l'état initial du bouton d'effacement de la recherche
+  gererCroixRecherche();
+
+  // 2. Chargement des données initiales du tableau
+  const initDataEl = document.getElementById("resultats-initiaux-data");
+  const initPagingEl = document.getElementById("pagination-initiale-data");
+
+  if (initDataEl && initPagingEl) {
+    const objetsInitiaux = JSON.parse(initDataEl.textContent);
+    const paginationInitiale = JSON.parse(initPagingEl.textContent);
+
+    afficherTableauPV(objetsInitiaux);
+    mettreAJourPagination(paginationInitiale);
+  } else {
+    chargerPointsVente(1);
+  }
+});
+</script>
+{% endblock %}

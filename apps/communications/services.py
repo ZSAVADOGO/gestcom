@@ -6,24 +6,6 @@ from django.utils.dateparse import parse_date
 from datetime import datetime, time
 
 
-""" def lister_communiques(recherche="", type_communique="", page=1, page_size=12):
-
-    queryset = Communique.objects.all().order_by(
-        "-est_a_la_une",
-        "-ordre_affichage",
-        "-date_publication"
-    ) # On récupère tout (BROUILLON, PUBLIE, etc.)
-
-    if recherche:
-        queryset = queryset.filter(
-            Q(titre__icontains=recherche)
-            | Q(resume__icontains=recherche)
-            | Q(contenu__icontains=recherche)
-        )
-
-    if type_communique:
-        queryset = queryset.filter(type=type_communique) """
-        
 def lister_communiques(recherche="", type_communique="", statut="", date_debut=None, date_fin=None, page=1, page_size=12):
     """
     Fonction de filtre globale du QuerySet pour les communiqués.

@@ -69,74 +69,10 @@ def modifier_communique(request, communique_id):
         "message": "Le communiqué a été mis à jour avec succès."
     }, status=200)
 
-""" def _extraire_et_sauvegarder_communique(request, instance=None):
-    #Extrait les champs du formulaire POST et enregistre un nouveau communiqué
-    #ou met à jour l'instance existante.
-    titre = request.POST.get("titre", "").strip()
-    type_comm = request.POST.get("type", "").strip()
-    statut = request.POST.get("statut", "").strip()
-    resume = request.POST.get("resume", "").strip()
-    contenu = request.POST.get("contenu", "").strip()
-    date_pub_str = request.POST.get("date_publication", "").strip()
-    est_a_la_une = request.POST.get("est_a_la_une") in ["true", "on", "1", True]
-    image_file = request.FILES.get("image")
-
-    if not titre or not contenu or not type_comm or not statut:
-        return None, "Certains champs obligatoires sont manquants."
-
-    # Récupération de l'instance passée ou création d'une nouvelle
-    communique = instance if instance else Communique()
-
-    communique.titre = titre
-    communique.type = type_comm
-    communique.statut = statut
-    communique.resume = resume
-    communique.contenu = contenu
-    communique.est_a_la_une = est_a_la_une
-
-    if date_pub_str:
-        communique.date_publication = parse_datetime(date_pub_str)
-        
-    if image_file:
-        communique.image = image_file
-
-    communique.save()
-    return communique, None """
-
-""" 
-# ------------------------------------------------------------------------------
-# 2. VUE : CRÉATION D'UN COMMUNIQUÉ (POST)
-# ------------------------------------------------------------------------------
-@require_POST
-def creer_communique(request):
-    #Vue réservée exclusivement à la création d'un nouveau communiqué.
-    communique, erreur = _extraire_et_sauvegarder_communique(request)
-
-    if erreur:
-        return HttpResponseBadRequest(erreur)
-
-    return JsonResponse({"status": "success", "id": communique.id, "message": "Communiqué créé avec succès."}, status=201)
-
-
-# ------------------------------------------------------------------------------
-# 3. VUE : MODIFICATION D'UN COMMUNIQUÉ (POST)
-# ------------------------------------------------------------------------------
-@require_POST
-def modifier_communique(request, communique_id):
-    communique_existant = get_object_or_404(Communique, id=communique_id)
-    communique, erreur = _extraire_et_sauvegarder_communique(request, instance=communique_existant)
-
-    if erreur:
-        return HttpResponseBadRequest(erreur)
-
-    return JsonResponse({"status": "success", "id": communique.id, "message": "Communiqué mis à jour avec succès."}, status=200) """
-
-
-
-
 # ------------------------------------------------------------------------------
 # 1. VUE : AFFICHAGE & FILTRAGE DUDASHBOARD (GET)
 # ------------------------------------------------------------------------------
+
 @require_GET
 def communique_dashboard(request):
     """

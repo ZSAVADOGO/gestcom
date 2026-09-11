@@ -69,7 +69,7 @@
                 </a>
 
                 <!-- Résultat -->
-                <a href="{% url 'resultats:liste' %}" 
+                <a href="{% url 'resultats:resultat_dashboard' %}" 
                 class="px-3 py-2 rounded-md text-sm font-medium transition-colors 
                         {% if request.resolver_match.app_name == 'resultats' %} 
                             text-emerald-400 bg-slate-800/80 shadow-sm 
@@ -140,39 +140,13 @@
                     </div>
                 </div>
             </nav>
-                {% comment %} <nav class="hidden xl:flex items-center space-x-1">
-                    <a href="#" class="px-3 py-2 rounded-md text-sm font-medium text-emerald-400 bg-slate-800/60 transition-colors">Accueil</a>
-                    <a href="{% url 'communications:liste' %}" class="px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">Communiqué</a>
-                    <a href="{% url 'resultats:liste' %}" class="px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">Résultat</a>
-                    <a href="#" class="px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">Programme</a>
-
-                    <!-- Menu Déroulant : Hippisme -->
-                     <a href="#" class="px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">Hippisme</a>
-                   
-
-                    <!-- Séparateur vertical -->
-                    <span class="text-slate-600 px-1 select-none">|</span>
-
-                    <!-- Menu Déroulant : Paramétrage -->
-                    <div class="relative" x-data="{ open: false }" @mouseleave="open = false">
-                        <button @click="open = !open" @mouseenter="open = true" class="flex items-center px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors focus:outline-none">
-                            <span>Paramétrage</span>
-                            <svg class="ml-1.5 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                            </svg>
-                        </button>
-                        <div x-show="open" x-cloak x-transition:enter="transition ease-out duration-100" x-transition:enter-start="transform opacity-0 scale-95" x-transition:enter-end="transform opacity-100 scale-100" class="absolute left-0 mt-1 w-52 rounded-md shadow-lg bg-white ring-1 ring-black/5 py-1 z-50">
-                            <a href="#" class="block px-4 py-2 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700">Utilisateurs</a>
-                            <a href="#" class="block px-4 py-2 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700">Roles / Profils</a>
-                            <a href="{% url 'points_vente:liste' %}" class="block px-4 py-2 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700">Point de vente</a>
-                        </div>
-                    </div>
-                </nav> {% endcomment %}
+               
 
                 <!-- NAVIGATION SECONDAIRE (Bureau) -->
                 <div class="hidden xl:flex items-center space-x-4">
                     
-                    <form action="{% url 'core:actualiser_donnees' %}" method="POST" class="inline">
+                    <!-- Ajout de l'id "form-actualiser-donnees" et suppression du comportement POST par défaut via JS -->
+                    <form id="form-actualiser-donnees" action="{% url 'core:actualiser_donnees' %}" method="POST" class="inline">
                         {% csrf_token %}
                         <button type="submit" 
                                 class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition-all shadow-sm active:scale-95 border border-indigo-400/30">
@@ -182,6 +156,17 @@
                             <span>Actualiser</span>
                         </button>
                     </form>
+                    
+                    {% comment %} <form action="{% url 'core:actualiser_donnees' %}" method="POST" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" 
+                                class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition-all shadow-sm active:scale-95 border border-indigo-400/30">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            <span>Actualiser</span>
+                        </button>
+                    </form> {% endcomment %}
                     
                     <a href="#" class="px-3 py-2 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors flex items-center space-x-1.5">
                         <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -234,7 +219,7 @@
         <div x-show="mobileMenuOpen" x-cloak class="xl:hidden bg-slate-900 border-b border-slate-800 px-4 pt-2 pb-4 space-y-1">
             <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-emerald-400 bg-slate-800">Accueil</a>
             <a href="{% url 'communications:liste' %}" class="block px-3 py-2 rounded-md text-base font-medium text-slate-300 hover:text-white hover:bg-slate-800">Communiqué</a>
-            <a href="{% url 'resultats:liste' %}" class="block px-3 py-2 rounded-md text-base font-medium text-slate-300 hover:text-white hover:bg-slate-800">Résultat</a>
+            <a href="{% url 'resultats:resultat_dashboard' %}" class="block px-3 py-2 rounded-md text-base font-medium text-slate-300 hover:text-white hover:bg-slate-800">Résultat</a>
             <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-slate-300 hover:text-white hover:bg-slate-800">Programme</a>
             <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-slate-300 hover:text-white hover:bg-slate-800">Statistique</a>
         </div>
@@ -280,3 +265,68 @@
 
 </body>
 </html>
+
+
+<script>
+    /**
+ * Gestion de l'actualisation des données du crawler LONAB via AJAX
+ */
+async function actualiserDonneesCrawler(event) {
+  event.preventDefault();
+  const form = event.target;
+  const targetUrl = form.action;
+
+  // 1. Affichage du spinner de chargement avec votre helper
+  gestComAlerts.chargement("Collecte et actualisation des données en cours...");
+
+  try {
+    const response = await fetch(targetUrl, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': getCSRFToken(),
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    });
+
+    const donnees = await response.json();
+
+    // 2. Fermeture du loader une fois la réponse reçue
+    gestComAlerts.fermerChargement();
+
+    // 3. Gestion des réponses non-200 ou des statuts personnalisés
+    if (!response.ok || donnees.status === "error") {
+      const msgErreur = donnees.message || donnees.erreur || "Impossible d'actualiser les données.";
+      return gestComAlerts.erreur(msgErreur);
+    }
+
+    // 4. Cas particulier : Avertissement (ex: pas de données trouvées)
+    if (donnees.status === "warning") {
+      return gestComAlerts.avertissement ? 
+             gestComAlerts.avertissement(donnees.message) : 
+             gestComAlerts.erreur(donnees.message);
+    }
+
+    // 5. Succès : Notification Swal et rafraîchissement
+    await gestComAlerts.succes(
+      donnees.message || "Résultats actualisés avec succès.",
+      donnees.title || "Actualisation réussie"
+    );
+
+    // Rechargement de la page pour afficher les nouvelles données
+    window.location.reload();
+
+  } catch (err) {
+    console.error("Erreur réseau / JS :", err);
+    gestComAlerts.fermerChargement();
+    gestComAlerts.erreur("Impossible de contacter le serveur.");
+  }
+}
+
+// Attachement de l'événement au chargement du DOM
+document.addEventListener('DOMContentLoaded', () => {
+  const formActualiser = document.getElementById('form-actualiser-donnees');
+  if (formActualiser) {
+    formActualiser.addEventListener('submit', actualiserDonneesCrawler);
+  }
+});
+</script>
